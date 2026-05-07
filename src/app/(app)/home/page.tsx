@@ -17,7 +17,7 @@ export default async function HomePage({ searchParams }: Props) {
 
   const tweets = isFollowing
     ? await getFeedTweets(user!.id)
-    : await getAllTweets()
+    : await getAllTweets(user!.id)
 
   return (
     <div>

@@ -9,20 +9,38 @@ const TWEET_SELECT = `
     username,
     display_name,
     avatar_url
-  )
+  ),
+  likes (count)
 `
+
+async function attachLikedBy(tweets: any[], userId: string) {
+  if (tweets.length === 0) return tweets
+  const supabase = await createClient()
+
+  const { data: liked } = await supabase
+    .from('likes')
+    .select('tweet_id')
+    .eq('user_id', userId)
+    .in('tweet_id', tweets.map((t) => t.id))
+
+  const likedSet = new Set(liked?.map((l) => l.tweet_id) ?? [])
+  return tweets.map((t) => ({
+    ...t,
+    like_count: t.likes?.[0]?.count ?? 0,
+    liked_by_me: likedSet.has(t.id),
+  }))
+}
 
 export async function getFeedTweets(userId: string) {
   const supabase = await createClient()
 
-  // Get IDs of users the current user follows
   const { data: follows } = await supabase
     .from('follows')
     .select('following_id')
     .eq('follower_id', userId)
 
   const followingIds = follows?.map((f) => f.following_id) ?? []
-  const feedUserIds = [...followingIds, userId] // include own tweets
+  const feedUserIds = [...followingIds, userId]
 
   const { data, error } = await supabase
     .from('tweets')
@@ -32,10 +50,10 @@ export async function getFeedTweets(userId: string) {
     .limit(50)
 
   if (error) throw new Error(error.message)
-  return data ?? []
+  return attachLikedBy(data ?? [], userId)
 }
 
-export async function getAllTweets() {
+export async function getAllTweets(userId?: string) {
   const supabase = await createClient()
 
   const { data, error } = await supabase
@@ -45,5 +63,6 @@ export async function getAllTweets() {
     .limit(50)
 
   if (error) throw new Error(error.message)
-  return data ?? []
+  if (!userId) return data ?? []
+  return attachLikedBy(data ?? [], userId)
 }

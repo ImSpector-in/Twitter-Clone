@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { formatDistanceToNow } from 'date-fns'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import DeleteTweetButton from './DeleteTweetButton'
+import LikeButton from './LikeButton'
 import type { TweetWithProfile } from '@/types'
 
 type Props = {
@@ -32,8 +33,11 @@ export default function TweetCard({ tweet, currentUserId }: Props) {
         </div>
         <p className="text-sm whitespace-pre-wrap break-words">{tweet.content}</p>
         <div className="flex items-center gap-4 pt-1">
-          {/* Like button coming Day 8 */}
-          <span className="text-muted-foreground text-xs">♡ Like</span>
+          <LikeButton
+            tweetId={tweet.id}
+            initialLiked={tweet.liked_by_me}
+            initialCount={tweet.like_count}
+          />
           {tweet.user_id === currentUserId && (
             <DeleteTweetButton tweetId={tweet.id} />
           )}
