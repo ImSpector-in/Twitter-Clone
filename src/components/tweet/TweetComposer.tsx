@@ -10,9 +10,12 @@ const MAX = 280
 
 type Props = {
   onSuccess?: () => void
+  replyToId?: string
+  placeholder?: string
+  compact?: boolean
 }
 
-export default function TweetComposer({ onSuccess }: Props = {}) {
+export default function TweetComposer({ onSuccess, replyToId, placeholder = "What's happening?", compact = false }: Props = {}) {
   const [content, setContent] = useState('')
   const [loading, setLoading] = useState(false)
   const remaining = MAX - content.length
@@ -23,7 +26,7 @@ export default function TweetComposer({ onSuccess }: Props = {}) {
 
     setLoading(true)
     try {
-      await createTweet(content.trim())
+      await createTweet(content.trim(), replyToId)
       setContent('')
       onSuccess?.()
     } catch {
@@ -33,22 +36,28 @@ export default function TweetComposer({ onSuccess }: Props = {}) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="p-4 space-y-3">
+    <form onSubmit={handleSubmit} className={compact ? 'flex items-center gap-2' : 'p-4 space-y-3'}>
       <Textarea
-        placeholder="What's happening?"
+        placeholder={placeholder}
         value={content}
         onChange={(e) => setContent(e.target.value)}
-        rows={3}
-        className="resize-none border-none shadow-none focus-visible:ring-0 text-base p-0"
+        rows={compact ? 1 : 3}
+        className={`resize-none border-none shadow-none focus-visible:ring-0 p-0 ${compact ? 'text-sm min-h-0' : 'text-base'}`}
       />
-      <div className="flex items-center justify-between">
-        <span className={`text-sm ${remaining < 20 ? remaining < 0 ? 'text-destructive font-semibold' : 'text-yellow-500' : 'text-muted-foreground'}`}>
-          {remaining}
-        </span>
-        <Button type="submit" disabled={loading || !content.trim() || remaining < 0} className="rounded-full px-5">
-          {loading ? 'Posting...' : 'Post'}
+      {compact ? (
+        <Button type="submit" size="sm" disabled={loading || !content.trim() || remaining < 0} className="rounded-full shrink-0">
+          {loading ? '...' : 'Reply'}
         </Button>
-      </div>
+      ) : (
+        <div className="flex items-center justify-between">
+          <span className={`text-sm ${remaining < 20 ? remaining < 0 ? 'text-destructive font-semibold' : 'text-yellow-500' : 'text-muted-foreground'}`}>
+            {remaining}
+          </span>
+          <Button type="submit" disabled={loading || !content.trim() || remaining < 0} className="rounded-full px-5">
+            {loading ? 'Posting...' : 'Post'}
+          </Button>
+        </div>
+      )}
     </form>
   )
 }

@@ -8,9 +8,12 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import TweetComposer from '@/components/tweet/TweetComposer'
+import NotificationBell from '@/components/notifications/NotificationBell'
 
 type Props = {
   username: string
+  userId: string
+  unreadCount: number
 }
 
 const navItems = (username: string) => [
@@ -19,7 +22,7 @@ const navItems = (username: string) => [
   { href: `/profile/${username}`, label: 'Profile', icon: User },
 ]
 
-export default function Sidebar({ username }: Props) {
+export default function Sidebar({ username, userId, unreadCount }: Props) {
   const pathname = usePathname()
   const router = useRouter()
   const [postOpen, setPostOpen] = useState(false)
@@ -49,6 +52,8 @@ export default function Sidebar({ username }: Props) {
             </Link>
           )
         })}
+
+        <NotificationBell initialCount={unreadCount} userId={userId} />
 
         <Button
           onClick={() => setPostOpen(true)}

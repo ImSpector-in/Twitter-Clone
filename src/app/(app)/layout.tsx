@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { getUnreadCount } from '@/lib/queries/notifications'
 import Sidebar from '@/components/nav/Sidebar'
 import BottomNav from '@/components/nav/BottomNav'
 import FloatingPostButton from '@/components/tweet/FloatingPostButton'
@@ -17,13 +18,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .single()
 
   const username = profile?.username ?? 'unknown'
+  const unreadCount = await getUnreadCount(user.id)
 
   return (
     <div className="min-h-screen flex justify-center">
       <div className="flex w-full max-w-5xl">
         {/* Sidebar — hidden on mobile */}
         <aside className="hidden md:flex w-16 xl:w-64 shrink-0 border-r flex-col sticky top-0 h-screen">
-          <Sidebar username={username} />
+          <Sidebar username={username} userId={user.id} unreadCount={unreadCount} />
         </aside>
 
         {/* Main content */}
@@ -31,7 +33,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           {children}
         </main>
 
-        {/* Right column — hidden on smaller screens */}
+        {/* Right column */}
         <div className="hidden lg:block w-80 shrink-0 p-4">
           <div className="rounded-xl bg-muted p-4 text-sm text-muted-foreground">
             More features coming soon.

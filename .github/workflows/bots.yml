@@ -1,0 +1,40 @@
+name: Daily Bots
+
+on:
+  schedule:
+    # 4x per day: 02:00, 08:00, 14:00, 20:00 UTC
+    # Hawaii (UTC-10): 16:00, 22:00, 04:00, 10:00 HST
+    - cron: '0 2,8,14,20 * * *'
+  workflow_dispatch:
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        bot: [cto_fanatic, ux_critic, buildinpublic]
+    steps:
+      - name: Post tweet for ${{ matrix.bot }}
+        run: |
+          curl -sS -X POST "${{ secrets.APP_URL }}/api/cron/post-bots" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -d '{"bot":"${{ matrix.bot }}"}' \
+            --fail-with-body
+
+  reply:
+    runs-on: ubuntu-latest
+    needs: post
+    strategy:
+      fail-fast: false
+      matrix:
+        bot: [cto_fanatic, ux_critic, buildinpublic]
+    steps:
+      - name: Reply to a tweet for ${{ matrix.bot }}
+        run: |
+          curl -sS -X POST "${{ secrets.APP_URL }}/api/cron/bot-replies" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -d '{"bot":"${{ matrix.bot }}"}' \
+            --fail-with-body
