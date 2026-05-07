@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { formatDistanceToNow } from 'date-fns'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import DeleteTweetButton from './DeleteTweetButton'
@@ -22,8 +23,8 @@ export default function TweetCard({ tweet, currentUserId }: Props) {
       </Avatar>
       <div className="flex-1 min-w-0 space-y-1">
         <div className="flex items-center gap-1 flex-wrap">
-          <span className="font-semibold text-sm">{displayName}</span>
-          <span className="text-muted-foreground text-sm">@{username}</span>
+          <Link href={`/profile/${username}`} className="font-semibold text-sm hover:underline">{displayName}</Link>
+          <Link href={`/profile/${username}`} className="text-muted-foreground text-sm hover:underline">@{username}</Link>
           <span className="text-muted-foreground text-sm">·</span>
           <span className="text-muted-foreground text-sm">
             {formatDistanceToNow(new Date(tweet.created_at), { addSuffix: true })}
