@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 
-export async function createTweet(content: string, replyToId?: string) {
+export async function createTweet(content: string, replyToId?: string, imageUrl?: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -11,7 +11,12 @@ export async function createTweet(content: string, replyToId?: string) {
 
   const { error } = await supabase
     .from('tweets')
-    .insert({ content, user_id: user.id, reply_to_id: replyToId ?? null })
+    .insert({
+      content,
+      user_id: user.id,
+      reply_to_id: replyToId ?? null,
+      image_url: imageUrl ?? null,
+    })
 
   if (error) throw new Error(error.message)
 

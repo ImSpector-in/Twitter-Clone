@@ -4,6 +4,7 @@ export type TweetWithProfile = {
   created_at: string
   user_id: string
   reply_to_id: string | null
+  image_url: string | null
   like_count: number
   liked_by_me: boolean
   reply_count: number

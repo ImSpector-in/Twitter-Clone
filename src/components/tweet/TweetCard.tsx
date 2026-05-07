@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { formatDistanceToNow } from 'date-fns'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -50,6 +51,17 @@ export default function TweetCard({ tweet, currentUserId }: Props) {
           </span>
         </div>
         <p className="text-sm whitespace-pre-wrap break-words">{tweet.content}</p>
+        {tweet.image_url && (
+          <div onClick={stopProp} className="mt-2">
+            <Image
+              src={tweet.image_url}
+              alt="Tweet image"
+              width={500}
+              height={300}
+              className="rounded-xl object-cover max-h-80 w-full cursor-default"
+            />
+          </div>
+        )}
         <div className="flex items-center gap-4 pt-1" onClick={stopProp}>
           <ReplyButton tweetId={tweet.id} replyCount={tweet.reply_count} />
           <LikeButton

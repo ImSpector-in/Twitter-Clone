@@ -6,6 +6,7 @@ const TWEET_SELECT = `
   created_at,
   user_id,
   reply_to_id,
+  image_url,
   profiles!tweets_user_id_fkey (
     username,
     display_name,
