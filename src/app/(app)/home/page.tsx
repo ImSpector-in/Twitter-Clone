@@ -3,9 +3,24 @@ import { createClient } from '@/lib/supabase/server'
 import { getFeedTweets, getAllTweets } from '@/lib/queries/tweets'
 import HomeTabs from '@/components/home/HomeTabs'
 import TweetList from '@/components/tweet/TweetList'
+import { TweetListSkeleton } from '@/components/tweet/TweetSkeleton'
 
 type Props = {
   searchParams: Promise<{ tab?: string }>
+}
+
+async function Feed({ userId, isFollowing }: { userId: string; isFollowing: boolean }) {
+  const tweets = isFollowing
+    ? await getFeedTweets(userId)
+    : await getAllTweets(userId)
+
+  return (
+    <TweetList
+      tweets={tweets as any}
+      currentUserId={userId}
+      emptyMessage={isFollowing ? 'Follow someone to see their tweets here.' : 'No tweets yet.'}
+    />
+  )
 }
 
 export default async function HomePage({ searchParams }: Props) {
@@ -15,10 +30,6 @@ export default async function HomePage({ searchParams }: Props) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const tweets = isFollowing
-    ? await getFeedTweets(user!.id)
-    : await getAllTweets(user!.id)
-
   return (
     <div>
       <div className="border-b px-4 py-3">
@@ -27,11 +38,9 @@ export default async function HomePage({ searchParams }: Props) {
       <Suspense>
         <HomeTabs />
       </Suspense>
-      <TweetList
-        tweets={tweets as any}
-        currentUserId={user!.id}
-        emptyMessage={isFollowing ? 'Follow someone to see their tweets here.' : 'No tweets yet.'}
-      />
+      <Suspense fallback={<TweetListSkeleton />}>
+        <Feed userId={user!.id} isFollowing={isFollowing} />
+      </Suspense>
     </div>
   )
 }
