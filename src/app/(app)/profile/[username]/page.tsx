@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getProfileByUsername, getTweetsByUserId, getFollowCounts } from '@/lib/queries/profile'
+import { attachLikedBy } from '@/lib/queries/tweets'
 import ProfileHeader from '@/components/profile/ProfileHeader'
 import FollowButton from '@/components/profile/FollowButton'
 import TweetList from '@/components/tweet/TweetList'
@@ -18,7 +19,7 @@ export default async function ProfilePage({ params }: Props) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const [tweets, counts, followCheck] = await Promise.all([
+  const [rawTweets, counts, followCheck] = await Promise.all([
     getTweetsByUserId(profile.id),
     getFollowCounts(profile.id),
     supabase
@@ -29,6 +30,7 @@ export default async function ProfilePage({ params }: Props) {
       .single(),
   ])
 
+  const tweets = await attachLikedBy(rawTweets, user!.id)
   const isOwnProfile = user?.id === profile.id
   const isFollowing = !!followCheck.data
 

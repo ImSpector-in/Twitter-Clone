@@ -16,7 +16,7 @@ const TWEET_SELECT = `
   replies:tweets!reply_to_id (count)
 `
 
-async function attachLikedBy(tweets: any[], userId: string) {
+export async function attachLikedBy(tweets: any[], userId: string) {
   if (tweets.length === 0) return tweets
   const supabase = await createClient()
 

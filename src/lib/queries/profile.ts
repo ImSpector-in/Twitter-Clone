@@ -30,13 +30,18 @@ export async function getTweetsByUserId(userId: string) {
       content,
       created_at,
       user_id,
+      reply_to_id,
+      image_url,
       profiles!tweets_user_id_fkey (
         username,
         display_name,
         avatar_url
-      )
+      ),
+      likes (count),
+      replies:tweets!reply_to_id (count)
     `)
     .eq('user_id', userId)
+    .is('reply_to_id', null)
     .order('created_at', { ascending: false })
     .limit(50)
 
