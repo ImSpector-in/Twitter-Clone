@@ -55,7 +55,7 @@ export default function AvatarUpload({ userId, currentAvatarUrl, displayName, on
       toast.error('Failed to save avatar.')
     } else {
       setAvatarUrl(publicUrl)
-      onUpload(publicUrl)
+      onUpload?.(publicUrl)
       toast.success('Avatar updated!')
     }
 
