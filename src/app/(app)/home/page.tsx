@@ -1,23 +1,36 @@
+import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
-import { getFeedTweets } from '@/lib/queries/tweets'
-import TweetComposer from '@/components/tweet/TweetComposer'
+import { getFeedTweets, getAllTweets } from '@/lib/queries/tweets'
+import HomeTabs from '@/components/home/HomeTabs'
 import TweetList from '@/components/tweet/TweetList'
 
-export default async function HomePage() {
+type Props = {
+  searchParams: Promise<{ tab?: string }>
+}
+
+export default async function HomePage({ searchParams }: Props) {
+  const { tab } = await searchParams
+  const isFollowing = tab === 'following'
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  const tweets = await getFeedTweets(user!.id)
+
+  const tweets = isFollowing
+    ? await getFeedTweets(user!.id)
+    : await getAllTweets()
 
   return (
     <div>
       <div className="border-b px-4 py-3">
         <h2 className="text-xl font-bold">Home</h2>
       </div>
-      <TweetComposer />
+      <Suspense>
+        <HomeTabs />
+      </Suspense>
       <TweetList
         tweets={tweets as any}
         currentUserId={user!.id}
-        emptyMessage="No tweets yet — follow someone or post something!"
+        emptyMessage={isFollowing ? 'Follow someone to see their tweets here.' : 'No tweets yet.'}
       />
     </div>
   )

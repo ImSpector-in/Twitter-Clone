@@ -8,7 +8,11 @@ import { Textarea } from '@/components/ui/textarea'
 
 const MAX = 280
 
-export default function TweetComposer() {
+type Props = {
+  onSuccess?: () => void
+}
+
+export default function TweetComposer({ onSuccess }: Props = {}) {
   const [content, setContent] = useState('')
   const [loading, setLoading] = useState(false)
   const remaining = MAX - content.length
@@ -21,6 +25,7 @@ export default function TweetComposer() {
     try {
       await createTweet(content.trim())
       setContent('')
+      onSuccess?.()
     } catch {
       toast.error('Failed to post tweet. Try again.')
     }
@@ -28,7 +33,7 @@ export default function TweetComposer() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="border-b p-4 space-y-3">
+    <form onSubmit={handleSubmit} className="p-4 space-y-3">
       <Textarea
         placeholder="What's happening?"
         value={content}
