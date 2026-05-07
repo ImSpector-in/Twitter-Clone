@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { getNotifications } from '@/lib/queries/notifications'
-import { markAllRead } from '@/lib/actions/notifications'
 import NotificationItem from '@/components/notifications/NotificationItem'
+import MarkNotificationsRead from '@/components/notifications/MarkNotificationsRead'
 import type { Notification } from '@/types'
 
 export default async function NotificationsPage() {
@@ -10,11 +10,9 @@ export default async function NotificationsPage() {
 
   const notifications = await getNotifications(user!.id)
 
-  // Mark all as read when page is viewed
-  await markAllRead()
-
   return (
     <div>
+      <MarkNotificationsRead />
       <div className="border-b px-4 py-3">
         <h2 className="text-xl font-bold">Notifications</h2>
       </div>
