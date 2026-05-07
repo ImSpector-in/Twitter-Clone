@@ -13,9 +13,10 @@ type Props = {
   followers: number
   following: number
   isOwnProfile: boolean
+  followButton?: React.ReactNode
 }
 
-export default function ProfileHeader({ profile, followers, following, isOwnProfile }: Props) {
+export default function ProfileHeader({ profile, followers, following, isOwnProfile, followButton }: Props) {
   const displayName = profile.display_name || profile.username
   const initials = displayName.slice(0, 2).toUpperCase()
 
@@ -26,14 +27,14 @@ export default function ProfileHeader({ profile, followers, following, isOwnProf
           <AvatarImage src={profile.avatar_url ?? undefined} alt={displayName} />
           <AvatarFallback className="text-xl">{initials}</AvatarFallback>
         </Avatar>
-        {isOwnProfile && (
+        {isOwnProfile ? (
           <a
             href="/profile/edit"
             className="text-sm border rounded-full px-4 py-1.5 font-semibold hover:bg-muted transition-colors"
           >
             Edit profile
           </a>
-        )}
+        ) : followButton}
       </div>
       <div>
         <h1 className="text-xl font-bold">{displayName}</h1>

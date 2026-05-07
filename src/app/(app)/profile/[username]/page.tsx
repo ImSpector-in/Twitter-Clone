@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getProfileByUsername, getTweetsByUserId, getFollowCounts } from '@/lib/queries/profile'
 import ProfileHeader from '@/components/profile/ProfileHeader'
+import FollowButton from '@/components/profile/FollowButton'
 import TweetList from '@/components/tweet/TweetList'
 
 type Props = {
@@ -17,12 +18,19 @@ export default async function ProfilePage({ params }: Props) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const [tweets, counts] = await Promise.all([
+  const [tweets, counts, followCheck] = await Promise.all([
     getTweetsByUserId(profile.id),
     getFollowCounts(profile.id),
+    supabase
+      .from('follows')
+      .select('follower_id')
+      .eq('follower_id', user!.id)
+      .eq('following_id', profile.id)
+      .single(),
   ])
 
   const isOwnProfile = user?.id === profile.id
+  const isFollowing = !!followCheck.data
 
   return (
     <div>
@@ -31,6 +39,15 @@ export default async function ProfilePage({ params }: Props) {
         followers={counts.followers}
         following={counts.following}
         isOwnProfile={isOwnProfile}
+        followButton={
+          !isOwnProfile ? (
+            <FollowButton
+              targetUserId={profile.id}
+              targetUsername={profile.username}
+              initialIsFollowing={isFollowing}
+            />
+          ) : undefined
+        }
       />
       <TweetList
         tweets={tweets as any}
