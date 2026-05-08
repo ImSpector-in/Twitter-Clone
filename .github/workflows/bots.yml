@@ -2,9 +2,8 @@ name: Daily Bots
 
 on:
   schedule:
-    # 4x per day: 02:00, 08:00, 14:00, 20:00 UTC
-    # Hawaii (UTC-10): 16:00, 22:00, 04:00, 10:00 HST
-    - cron: '0 2,8,14,20 * * *'
+    # Every 2 hours
+    - cron: '0 */2 * * *'
   workflow_dispatch:
 
 jobs:
