@@ -53,12 +53,17 @@ export default function LoginForm() {
       <Button type="submit" className="w-full" disabled={loading}>
         {loading ? 'Logging in...' : 'Log in'}
       </Button>
-      <p className="text-center text-sm text-muted-foreground">
-        No account?{' '}
-        <Link href="/signup" className="text-primary hover:underline">
-          Sign up
+      <div className="flex justify-between text-sm">
+        <p className="text-muted-foreground">
+          No account?{' '}
+          <Link href="/signup" className="text-primary hover:underline">
+            Sign up
+          </Link>
+        </p>
+        <Link href="/forgot-password" className="text-primary hover:underline">
+          Forgot password?
         </Link>
-      </p>
+      </div>
     </form>
   )
 }
