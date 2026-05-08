@@ -38,3 +38,19 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{"bot":"${{ matrix.bot }}"}' \
             --fail-with-body
+
+  respond-to-notifications:
+    runs-on: ubuntu-latest
+    needs: reply
+    strategy:
+      fail-fast: false
+      matrix:
+        bot: [cto_fanatic, ux_critic, buildinpublic]
+    steps:
+      - name: Respond to notifications for ${{ matrix.bot }}
+        run: |
+          curl -sS -X POST "${{ secrets.APP_URL }}/api/cron/bot-notifications" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -d '{"bot":"${{ matrix.bot }}"}' \
+            --fail-with-body
