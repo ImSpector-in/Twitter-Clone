@@ -35,8 +35,33 @@ export async function attachLikedBy(tweets: any[], userId: string) {
   }))
 }
 
+async function getExcludedUserIds(userId: string) {
+  const supabase = await createClient()
+  const [blocksBy, blocksOf, mutes, mutedWords] = await Promise.all([
+    supabase.from('blocks').select('blocked_id').eq('blocker_id', userId),
+    supabase.from('blocks').select('blocker_id').eq('blocked_id', userId),
+    supabase.from('mutes').select('muted_id').eq('muter_id', userId),
+    supabase.from('muted_words').select('word').eq('user_id', userId),
+  ])
+  const excluded = new Set<string>([
+    ...(blocksBy.data?.map((b) => b.blocked_id) ?? []),
+    ...(blocksOf.data?.map((b) => b.blocker_id) ?? []),
+    ...(mutes.data?.map((m) => m.muted_id) ?? []),
+  ])
+  const mutedWordList = mutedWords.data?.map((w) => w.word) ?? []
+  return { excluded, mutedWordList }
+}
+
+function filterMutedWords(tweets: any[], mutedWordList: string[]) {
+  if (mutedWordList.length === 0) return tweets
+  return tweets.filter((t) =>
+    !mutedWordList.some((word) => t.content?.toLowerCase().includes(word))
+  )
+}
+
 export async function getFeedTweets(userId: string) {
   const supabase = await createClient()
+  const { excluded, mutedWordList } = await getExcludedUserIds(userId)
 
   const { data: follows } = await supabase
     .from('follows')
@@ -44,7 +69,7 @@ export async function getFeedTweets(userId: string) {
     .eq('follower_id', userId)
 
   const followingIds = follows?.map((f) => f.following_id) ?? []
-  const feedUserIds = [...followingIds, userId]
+  const feedUserIds = [...followingIds, userId].filter((id) => !excluded.has(id))
 
   const { data, error } = await supabase
     .from('tweets')
@@ -55,22 +80,32 @@ export async function getFeedTweets(userId: string) {
     .limit(50)
 
   if (error) throw new Error(error.message)
-  return attachLikedBy(data ?? [], userId)
+  const filtered = filterMutedWords(data ?? [], mutedWordList)
+  return attachLikedBy(filtered, userId)
 }
 
 export async function getAllTweets(userId?: string) {
   const supabase = await createClient()
 
-  const { data, error } = await supabase
-    .from('tweets')
-    .select(TWEET_SELECT)
-    .is('reply_to_id', null)
-    .order('created_at', { ascending: false })
-    .limit(50)
+  let excluded = new Set<string>()
+  let mutedWordList: string[] = []
+  if (userId) {
+    const result = await getExcludedUserIds(userId)
+    excluded = result.excluded
+    mutedWordList = result.mutedWordList
+  }
 
+  let query = supabase.from('tweets').select(TWEET_SELECT).is('reply_to_id', null).order('created_at', { ascending: false }).limit(50)
+
+  if (excluded.size > 0) {
+    query = query.not('user_id', 'in', `(${[...excluded].join(',')})`)
+  }
+
+  const { data, error } = await query
   if (error) throw new Error(error.message)
-  if (!userId) return data ?? []
-  return attachLikedBy(data ?? [], userId)
+  const filtered = filterMutedWords(data ?? [], mutedWordList)
+  if (!userId) return filtered
+  return attachLikedBy(filtered, userId)
 }
 
 export async function getTweetById(tweetId: string, userId?: string) {
