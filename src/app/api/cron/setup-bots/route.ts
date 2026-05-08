@@ -7,16 +7,16 @@ export const runtime = 'nodejs'
 
 const BOT_PROFILES: Record<BotKey, { display_name: string; bio: string }> = {
   cto_fanatic: {
-    display_name: 'CTO Fanatic',
-    bio: 'Obsessed with fractional CTO insights, tech strategy, and startup scaling. Not affiliated with anyone — just a fan.',
+    display_name: 'Automation Pulse',
+    bio: 'n8n workflows, automation tips, and building an agency around things that run themselves.',
   },
   ux_critic: {
     display_name: 'UX Critic',
     bio: 'Roasting this app one feature at a time. Constructive feedback only. If I tweet it, build it.',
   },
   buildinpublic: {
-    display_name: 'Build in Public',
-    bio: 'Shipping things, breaking things, learning in public. Side projects welcome. DMs open.',
+    display_name: 'Solo Hustle',
+    bio: 'Young, self-employed, figuring it out. Freelancing, clients, financial freedom — the real version.',
   },
 }
 
