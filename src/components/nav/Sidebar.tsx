@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, Search, User, Settings, LogOut, Feather } from 'lucide-react'
+import { Home, Search, TrendingUp, User, Settings, LogOut, Feather } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -19,6 +19,7 @@ type Props = {
 const navItems = (username: string) => [
   { href: '/home', label: 'Home', icon: Home },
   { href: '/discover', label: 'Search', icon: Search },
+  { href: '/trending', label: 'Trending', icon: TrendingUp },
   { href: `/profile/${username}`, label: 'Profile', icon: User },
   { href: '/settings', label: 'Settings', icon: Settings },
 ]
