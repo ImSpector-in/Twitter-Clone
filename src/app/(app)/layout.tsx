@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getUnreadCount } from '@/lib/queries/notifications'
 import Sidebar from '@/components/nav/Sidebar'
 import BottomNav from '@/components/nav/BottomNav'
+import MobileMenu from '@/components/nav/MobileMenu'
 import FloatingPostButton from '@/components/tweet/FloatingPostButton'
 import TrendingSidebar from '@/components/trending/TrendingSidebar'
 
@@ -15,11 +16,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('username')
+    .select('username, display_name, avatar_url')
     .eq('id', user.id)
     .single()
 
   const username = profile?.username ?? 'unknown'
+  const displayName = profile?.display_name || profile?.username || 'User'
+  const avatarUrl = profile?.avatar_url ?? null
   const unreadCount = await getUnreadCount(user.id)
 
   return (
@@ -46,6 +49,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       {/* Bottom nav — mobile only */}
       <BottomNav username={username} />
       <FloatingPostButton />
+
+      {/* Mobile slide-in menu */}
+      <MobileMenu
+        username={username}
+        displayName={displayName}
+        avatarUrl={avatarUrl}
+        unreadCount={unreadCount}
+      />
     </div>
   )
 }
