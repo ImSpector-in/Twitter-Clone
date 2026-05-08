@@ -6,6 +6,7 @@ const TWEET_SELECT = `
   created_at,
   user_id,
   reply_to_id,
+  retweet_of_id,
   image_url,
   profiles!tweets_user_id_fkey (
     username,
@@ -13,25 +14,46 @@ const TWEET_SELECT = `
     avatar_url
   ),
   likes (count),
-  replies:tweets!reply_to_id (count)
+  replies:tweets!reply_to_id (count),
+  retweets:tweets!retweet_of_id (count),
+  original:tweets!retweet_of_id (
+    id,
+    content,
+    created_at,
+    user_id,
+    image_url,
+    profiles!tweets_user_id_fkey (
+      username,
+      display_name,
+      avatar_url
+    )
+  )
 `
 
 export async function attachLikedBy(tweets: any[], userId: string) {
   if (tweets.length === 0) return tweets
   const supabase = await createClient()
 
-  const { data: liked } = await supabase
-    .from('likes')
-    .select('tweet_id')
-    .eq('user_id', userId)
-    .in('tweet_id', tweets.map((t) => t.id))
+  const tweetIds = tweets.map((t) => t.id)
 
-  const likedSet = new Set(liked?.map((l) => l.tweet_id) ?? [])
+  const [likedRes, bookmarkedRes, retweetedRes] = await Promise.all([
+    supabase.from('likes').select('tweet_id').eq('user_id', userId).in('tweet_id', tweetIds),
+    supabase.from('bookmarks').select('tweet_id').eq('user_id', userId).in('tweet_id', tweetIds),
+    supabase.from('tweets').select('retweet_of_id').eq('user_id', userId).in('retweet_of_id', tweetIds).is('reply_to_id', null),
+  ])
+
+  const likedSet = new Set(likedRes.data?.map((l) => l.tweet_id) ?? [])
+  const bookmarkedSet = new Set(bookmarkedRes.data?.map((b) => b.tweet_id) ?? [])
+  const retweetedSet = new Set(retweetedRes.data?.map((r) => r.retweet_of_id) ?? [])
+
   return tweets.map((t) => ({
     ...t,
     like_count: t.likes?.[0]?.count ?? 0,
     liked_by_me: likedSet.has(t.id),
     reply_count: t.replies?.[0]?.count ?? 0,
+    retweet_count: t.retweets?.[0]?.count ?? 0,
+    retweeted_by_me: retweetedSet.has(t.id),
+    bookmarked_by_me: bookmarkedSet.has(t.id),
   }))
 }
 

@@ -8,10 +8,26 @@ import TweetComposer from './TweetComposer'
 type Props = {
   tweetId: string
   replyCount: number
+  replyScope?: string
+  isFollowingOwner?: boolean
+  isOwner?: boolean
 }
 
-export default function ReplyButton({ tweetId, replyCount }: Props) {
+export default function ReplyButton({ tweetId, replyCount, replyScope = 'everyone', isFollowingOwner = false, isOwner = false }: Props) {
   const [open, setOpen] = useState(false)
+
+  const canReply = isOwner ||
+    replyScope === 'everyone' ||
+    (replyScope === 'followers' && isFollowingOwner)
+
+  if (!canReply) {
+    return (
+      <span className="flex items-center gap-1 text-xs text-muted-foreground/40 cursor-not-allowed">
+        <MessageCircle className="h-4 w-4" />
+        {replyCount > 0 && <span>{replyCount}</span>}
+      </span>
+    )
+  }
 
   return (
     <>

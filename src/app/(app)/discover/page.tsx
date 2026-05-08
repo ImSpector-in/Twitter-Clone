@@ -1,5 +1,5 @@
-import UserSearch from '@/components/discover/UserSearch'
 import { createClient } from '@/lib/supabase/server'
+import DiscoverTabs from '@/components/discover/DiscoverTabs'
 
 export default async function DiscoverPage() {
   const supabase = await createClient()
@@ -8,10 +8,9 @@ export default async function DiscoverPage() {
   return (
     <div>
       <div className="border-b px-4 py-3">
-        <h2 className="text-xl font-bold">Discover</h2>
-        <p className="text-muted-foreground text-sm">Search for people to follow</p>
+        <h2 className="text-xl font-bold">Search</h2>
       </div>
-      <UserSearch currentUserId={user!.id} />
+      <DiscoverTabs currentUserId={user!.id} />
     </div>
   )
 }
