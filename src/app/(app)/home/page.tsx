@@ -32,8 +32,9 @@ export default async function HomePage({ searchParams }: Props) {
 
   return (
     <div>
-      <div className="border-b px-4 py-3 flex items-center justify-between">
-        <h2 className="text-xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">Home</h2>
+      <div className="border-b border-border/50 px-4 py-3">
+        <p className="text-[11px] font-semibold tracking-widest text-primary/70 uppercase mb-0.5">// The Timeline</p>
+        <h2 className="text-xl font-bold">Home</h2>
       </div>
       <Suspense>
         <HomeTabs />

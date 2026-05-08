@@ -19,16 +19,34 @@ type Props = {
   retweetedByUsername?: string
 }
 
+// Generate a consistent gradient for each user based on username
+const GRADIENTS = [
+  'from-teal-400 to-cyan-600',
+  'from-pink-400 to-rose-600',
+  'from-violet-400 to-purple-600',
+  'from-amber-400 to-orange-600',
+  'from-emerald-400 to-green-600',
+  'from-blue-400 to-indigo-600',
+  'from-fuchsia-400 to-pink-600',
+]
+
+function getUserGradient(username: string) {
+  let hash = 0
+  for (let i = 0; i < username.length; i++) hash = username.charCodeAt(i) + ((hash << 5) - hash)
+  return GRADIENTS[Math.abs(hash) % GRADIENTS.length]
+}
+
 export default function TweetCard({ tweet, currentUserId, retweetedByUsername }: Props) {
   const router = useRouter()
 
-  // If this is a pure retweet (no content), show the original tweet
   const isRetweet = !!tweet.retweet_of_id && !tweet.content
   const displayTweet = isRetweet && tweet.original ? tweet.original : tweet
   const profile = displayTweet.profiles
   const displayName = profile?.display_name || profile?.username || 'Unknown'
   const username = profile?.username || 'unknown'
   const initials = displayName.slice(0, 2).toUpperCase()
+  const gradient = getUserGradient(username)
+  const isHot = tweet.like_count >= 10
 
   function handleCardClick() {
     router.push(`/tweet/${displayTweet.id}`)
@@ -41,35 +59,63 @@ export default function TweetCard({ tweet, currentUserId, retweetedByUsername }:
   return (
     <article
       onClick={handleCardClick}
-      className="flex flex-col border-b hover:bg-muted/30 transition-colors cursor-pointer"
+      className="flex flex-col border-b border-border/50 hover:bg-card/80 transition-all cursor-pointer group"
     >
       {/* Retweet header */}
       {(isRetweet || retweetedByUsername) && (
-        <div className="flex items-center gap-1.5 px-4 pt-2 text-xs text-muted-foreground" onClick={stopProp}>
-          <Repeat2 className="h-3.5 w-3.5" />
+        <div className="flex items-center gap-1.5 px-4 pt-2.5 text-xs text-muted-foreground" onClick={stopProp}>
+          <Repeat2 className="h-3.5 w-3.5 text-green-400" />
           <span>{retweetedByUsername ?? tweet.profiles?.username} retweeted</span>
         </div>
       )}
 
       <div className="flex gap-3 px-4 py-3">
-        <div onClick={stopProp}>
-          <Avatar className="h-10 w-10 shrink-0">
+        {/* Avatar */}
+        <div onClick={stopProp} className="shrink-0">
+          <Avatar className="h-10 w-10 ring-2 ring-border/50">
             <AvatarImage src={profile?.avatar_url ?? undefined} alt={displayName} />
-            <AvatarFallback>{initials}</AvatarFallback>
+            <AvatarFallback className={`bg-gradient-to-br ${gradient} text-white font-semibold text-sm`}>
+              {initials}
+            </AvatarFallback>
           </Avatar>
         </div>
-        <div className="flex-1 min-w-0 space-y-1">
-          <div className="flex items-center gap-1 flex-wrap">
-            <Link href={`/profile/${username}`} onClick={stopProp} className="font-semibold text-sm hover:underline">{displayName}</Link>
-            <Link href={`/profile/${username}`} onClick={stopProp} className="text-muted-foreground text-sm hover:underline">@{username}</Link>
-            <span className="text-muted-foreground text-sm">·</span>
-            <span className="text-muted-foreground text-sm">
+
+        <div className="flex-1 min-w-0 space-y-1.5">
+          {/* Header row */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <Link
+              href={`/profile/${username}`}
+              onClick={stopProp}
+              className="font-semibold text-sm hover:text-primary transition-colors"
+            >
+              {displayName}
+            </Link>
+            <Link
+              href={`/profile/${username}`}
+              onClick={stopProp}
+              className="text-muted-foreground text-sm hover:text-primary transition-colors"
+            >
+              @{username}
+            </Link>
+            <span className="text-muted-foreground/50 text-xs">·</span>
+            <span className="text-muted-foreground text-xs">
               {formatDistanceToNow(new Date(displayTweet.created_at), { addSuffix: true })}
             </span>
+            {isHot && (
+              <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full bg-gradient-to-r from-orange-500 to-pink-500 text-white tracking-wide">
+                HOT
+              </span>
+            )}
           </div>
+
+          {/* Content */}
           {displayTweet.content && (
-            <p className="text-sm whitespace-pre-wrap break-words">{displayTweet.content}</p>
+            <p className="text-sm leading-relaxed whitespace-pre-wrap break-words text-foreground/90">
+              {displayTweet.content}
+            </p>
           )}
+
+          {/* Image */}
           {displayTweet.image_url && (
             <div onClick={stopProp} className="mt-2">
               <Image
@@ -77,11 +123,13 @@ export default function TweetCard({ tweet, currentUserId, retweetedByUsername }:
                 alt="Tweet image"
                 width={500}
                 height={300}
-                className="rounded-xl object-cover max-h-80 w-full cursor-default"
+                className="rounded-xl object-cover max-h-80 w-full cursor-default border border-border/30"
               />
             </div>
           )}
-          <div className="flex items-center gap-4 pt-1" onClick={stopProp}>
+
+          {/* Action row */}
+          <div className="flex items-center gap-5 pt-1.5" onClick={stopProp}>
             <ReplyButton tweetId={displayTweet.id} replyCount={tweet.reply_count} />
             <RetweetButton
               tweetId={isRetweet ? displayTweet.id : tweet.id}

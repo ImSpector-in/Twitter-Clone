@@ -40,10 +40,10 @@ export default function Sidebar({ username, userId, unreadCount }: Props) {
   return (
     <>
       <nav className="flex flex-col gap-0.5 p-3 h-full">
-        {/* Logo with teal gradient */}
+        {/* Logo */}
         <Link
           href="/home"
-          className="text-2xl font-black px-3 py-2 mb-3 bg-gradient-to-r from-primary to-cyan-400 bg-clip-text text-transparent w-fit"
+          className="text-2xl font-black px-3 py-2 mb-3 bg-gradient-to-r from-primary to-pink-400 bg-clip-text text-transparent w-fit"
         >
           𝕏
         </Link>
@@ -54,10 +54,10 @@ export default function Sidebar({ username, userId, unreadCount }: Props) {
             <Link
               key={href}
               href={href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-full text-base transition-all w-fit
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-base transition-all w-fit
                 ${active
-                  ? 'font-bold text-primary bg-primary/10'
-                  : 'font-medium hover:bg-accent hover:text-accent-foreground'
+                  ? 'font-bold text-primary border-l-2 border-primary pl-[10px]'
+                  : 'font-medium text-muted-foreground hover:text-foreground hover:bg-accent/50'
                 }`}
             >
               <Icon className={`h-5 w-5 shrink-0 ${active ? 'stroke-[2.5px]' : ''}`} />
@@ -71,7 +71,7 @@ export default function Sidebar({ username, userId, unreadCount }: Props) {
         {/* Post button with teal gradient */}
         <Button
           onClick={() => setPostOpen(true)}
-          className="mt-4 rounded-full xl:w-full w-10 h-10 xl:h-auto p-0 xl:px-5 xl:py-2.5 bg-gradient-to-r from-primary to-cyan-400 hover:opacity-90 border-0 shadow-md shadow-primary/30 transition-all hover:shadow-primary/50 hover:scale-[1.02]"
+          className="mt-4 rounded-full xl:w-full w-10 h-10 xl:h-auto p-0 xl:px-5 xl:py-2.5 bg-gradient-to-r from-primary via-cyan-400 to-pink-500 hover:opacity-90 border-0 shadow-lg shadow-primary/20 transition-all hover:shadow-primary/40 hover:scale-[1.02] text-white font-semibold"
         >
           <Feather className="h-4 w-4 xl:hidden" />
           <span className="hidden xl:inline font-semibold">Post</span>
