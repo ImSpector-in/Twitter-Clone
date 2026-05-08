@@ -39,12 +39,12 @@ export default function NotificationBell({ initialCount, userId }: { initialCoun
     <Link
       href="/notifications"
       onClick={() => setCount(0)}
-      className="relative flex items-center gap-3 px-3 py-2.5 rounded-full text-base font-medium transition-colors hover:bg-muted w-fit"
+      className="relative flex items-center gap-3 px-3 py-2.5 rounded-full text-base font-medium transition-all hover:bg-accent hover:text-accent-foreground w-fit"
     >
       <div className="relative">
         <Bell className="h-5 w-5 shrink-0" />
         {count > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 bg-blue-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
+          <span className="absolute -top-1.5 -right-1.5 bg-primary text-primary-foreground text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
             {count > 9 ? '9+' : count}
           </span>
         )}

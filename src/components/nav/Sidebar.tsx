@@ -39,8 +39,14 @@ export default function Sidebar({ username, userId, unreadCount }: Props) {
 
   return (
     <>
-      <nav className="flex flex-col gap-1 p-3 h-full">
-        <Link href="/home" className="text-2xl font-bold px-3 py-2 mb-2">𝕏</Link>
+      <nav className="flex flex-col gap-0.5 p-3 h-full">
+        {/* Logo with teal gradient */}
+        <Link
+          href="/home"
+          className="text-2xl font-black px-3 py-2 mb-3 bg-gradient-to-r from-primary to-cyan-400 bg-clip-text text-transparent w-fit"
+        >
+          𝕏
+        </Link>
 
         {navItems(username).map(({ href, label, icon: Icon }) => {
           const active = pathname === href || (href.includes('/profile/') && pathname.startsWith('/profile/'))
@@ -48,9 +54,13 @@ export default function Sidebar({ username, userId, unreadCount }: Props) {
             <Link
               key={href}
               href={href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-full text-base transition-colors hover:bg-muted w-fit ${active ? 'font-bold' : 'font-medium'}`}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-full text-base transition-all w-fit
+                ${active
+                  ? 'font-bold text-primary bg-primary/10'
+                  : 'font-medium hover:bg-accent hover:text-accent-foreground'
+                }`}
             >
-              <Icon className="h-5 w-5 shrink-0" />
+              <Icon className={`h-5 w-5 shrink-0 ${active ? 'stroke-[2.5px]' : ''}`} />
               <span className="hidden xl:inline">{label}</span>
             </Link>
           )
@@ -58,17 +68,18 @@ export default function Sidebar({ username, userId, unreadCount }: Props) {
 
         <NotificationBell initialCount={unreadCount} userId={userId} />
 
+        {/* Post button with teal gradient */}
         <Button
           onClick={() => setPostOpen(true)}
-          className="mt-3 rounded-full xl:w-full w-10 h-10 xl:h-auto p-0 xl:px-5 xl:py-2.5"
+          className="mt-4 rounded-full xl:w-full w-10 h-10 xl:h-auto p-0 xl:px-5 xl:py-2.5 bg-gradient-to-r from-primary to-cyan-400 hover:opacity-90 border-0 shadow-md shadow-primary/30 transition-all hover:shadow-primary/50 hover:scale-[1.02]"
         >
           <Feather className="h-4 w-4 xl:hidden" />
-          <span className="hidden xl:inline">Post</span>
+          <span className="hidden xl:inline font-semibold">Post</span>
         </Button>
 
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-full text-base font-medium transition-colors hover:bg-muted w-fit text-left mt-auto"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-full text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground w-fit text-left mt-auto text-muted-foreground"
         >
           <LogOut className="h-5 w-5 shrink-0" />
           <span className="hidden xl:inline">Log out</span>
@@ -78,7 +89,7 @@ export default function Sidebar({ username, userId, unreadCount }: Props) {
       <Dialog open={postOpen} onOpenChange={setPostOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>New post</DialogTitle>
+            <DialogTitle className="text-primary">New post</DialogTitle>
           </DialogHeader>
           <TweetComposer onSuccess={() => setPostOpen(false)} />
         </DialogContent>

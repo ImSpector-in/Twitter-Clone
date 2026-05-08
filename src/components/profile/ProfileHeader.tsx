@@ -25,45 +25,53 @@ export default function ProfileHeader({ profile, followers, following, isOwnProf
   const initials = displayName.slice(0, 2).toUpperCase()
 
   return (
-    <div className="border-b p-4 space-y-3">
-      <div className="flex items-start justify-between">
-        <Avatar className="h-16 w-16">
-          <AvatarImage src={profile.avatar_url ?? undefined} alt={displayName} />
-          <AvatarFallback className="text-xl">{initials}</AvatarFallback>
-        </Avatar>
-        {isOwnProfile ? (
-          <a
-            href="/profile/edit"
-            className="text-sm border rounded-full px-4 py-1.5 font-semibold hover:bg-muted transition-colors"
-          >
-            Edit profile
-          </a>
-        ) : followButton}
-      </div>
-      <div>
-        <div className="flex items-center gap-2">
-          <h1 className="text-xl font-bold">{displayName}</h1>
-          {profile.is_private && <Lock className="h-4 w-4 text-muted-foreground" />}
+    <div className="border-b">
+      {/* Gradient banner */}
+      <div className="h-28 bg-gradient-to-r from-primary/70 via-cyan-400/50 to-teal-500/30" />
+
+      <div className="px-4 pb-4 space-y-3 -mt-10">
+        <div className="flex items-end justify-between">
+          <Avatar className="h-20 w-20 ring-4 ring-background shadow-lg">
+            <AvatarImage src={profile.avatar_url ?? undefined} alt={displayName} />
+            <AvatarFallback className="text-2xl bg-gradient-to-br from-primary to-cyan-400 text-white">{initials}</AvatarFallback>
+          </Avatar>
+          {isOwnProfile ? (
+            <a
+              href="/profile/edit"
+              className="text-sm border border-primary/30 rounded-full px-4 py-1.5 font-semibold hover:bg-primary/10 hover:border-primary transition-colors text-primary"
+            >
+              Edit profile
+            </a>
+          ) : followButton}
         </div>
-        <p className="text-muted-foreground text-sm">@{profile.username}</p>
-      </div>
-      {profile.bio && <p className="text-sm">{profile.bio}</p>}
-      <div className="flex gap-4 text-sm">
-        {canViewFollows ? (
-          <>
-            <Link href={`/profile/${profile.username}/following`} className="hover:underline">
-              <strong>{following}</strong> <span className="text-muted-foreground">Following</span>
-            </Link>
-            <Link href={`/profile/${profile.username}/followers`} className="hover:underline">
-              <strong>{followers}</strong> <span className="text-muted-foreground">Followers</span>
-            </Link>
-          </>
-        ) : (
-          <>
-            <span><strong>{following}</strong> <span className="text-muted-foreground">Following</span></span>
-            <span><strong>{followers}</strong> <span className="text-muted-foreground">Followers</span></span>
-          </>
-        )}
+
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold">{displayName}</h1>
+            {profile.is_private && <Lock className="h-4 w-4 text-muted-foreground" />}
+          </div>
+          <p className="text-muted-foreground text-sm">@{profile.username}</p>
+        </div>
+
+        {profile.bio && <p className="text-sm">{profile.bio}</p>}
+
+        <div className="flex gap-4 text-sm">
+          {canViewFollows ? (
+            <>
+              <Link href={`/profile/${profile.username}/following`} className="hover:underline hover:text-primary transition-colors">
+                <strong>{following}</strong> <span className="text-muted-foreground">Following</span>
+              </Link>
+              <Link href={`/profile/${profile.username}/followers`} className="hover:underline hover:text-primary transition-colors">
+                <strong>{followers}</strong> <span className="text-muted-foreground">Followers</span>
+              </Link>
+            </>
+          ) : (
+            <>
+              <span><strong>{following}</strong> <span className="text-muted-foreground">Following</span></span>
+              <span><strong>{followers}</strong> <span className="text-muted-foreground">Followers</span></span>
+            </>
+          )}
+        </div>
       </div>
     </div>
   )
