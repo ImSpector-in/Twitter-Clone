@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import PasswordInput from '@/components/ui/password-input'
 import Link from 'next/link'
 
 export default function SignupForm() {
@@ -65,8 +66,7 @@ export default function SignupForm() {
           onChange={(e) => setEmail(e.target.value)}
           required
         />
-        <Input
-          type="password"
+        <PasswordInput
           placeholder="Password (min 6 characters)"
           value={password}
           onChange={(e) => setPassword(e.target.value)}

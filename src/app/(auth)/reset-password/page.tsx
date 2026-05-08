@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import PasswordInput from '@/components/ui/password-input'
 
 function ResetPasswordForm() {
   const [password, setPassword] = useState('')
@@ -74,16 +74,14 @@ function ResetPasswordForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <Input
-        type="password"
+      <PasswordInput
         placeholder="New password (min 6 characters)"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         minLength={6}
         required
       />
-      <Input
-        type="password"
+      <PasswordInput
         placeholder="Confirm new password"
         value={confirm}
         onChange={(e) => setConfirm(e.target.value)}
