@@ -33,6 +33,7 @@ export default async function ProfilePage({ params }: Props) {
   const tweets = await attachLikedBy(rawTweets, user!.id)
   const isOwnProfile = user?.id === profile.id
   const isFollowing = !!followCheck.data
+  const canViewFollows = isOwnProfile || !profile.is_private || isFollowing
 
   return (
     <div>
@@ -41,6 +42,7 @@ export default async function ProfilePage({ params }: Props) {
         followers={counts.followers}
         following={counts.following}
         isOwnProfile={isOwnProfile}
+        canViewFollows={canViewFollows}
         followButton={
           !isOwnProfile ? (
             <FollowButton

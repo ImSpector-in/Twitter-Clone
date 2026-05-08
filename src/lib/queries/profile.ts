@@ -11,6 +11,7 @@ export async function getProfileByUsername(username: string) {
       display_name,
       bio,
       avatar_url,
+      is_private,
       created_at
     `)
     .eq('username', username)
@@ -47,6 +48,24 @@ export async function getTweetsByUserId(userId: string) {
 
   if (error) throw new Error(error.message)
   return data ?? []
+}
+
+export async function getFollowers(userId: string) {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('follows')
+    .select('profiles!follows_follower_id_fkey (id, username, display_name, avatar_url)')
+    .eq('following_id', userId)
+  return data?.map((d) => d.profiles).filter(Boolean) ?? []
+}
+
+export async function getFollowing(userId: string) {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('follows')
+    .select('profiles!follows_following_id_fkey (id, username, display_name, avatar_url)')
+    .eq('follower_id', userId)
+  return data?.map((d) => d.profiles).filter(Boolean) ?? []
 }
 
 export async function getFollowCounts(userId: string) {

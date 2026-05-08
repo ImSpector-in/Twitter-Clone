@@ -1,4 +1,6 @@
+import Link from 'next/link'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Lock } from 'lucide-react'
 
 type Profile = {
   id: string
@@ -6,6 +8,7 @@ type Profile = {
   display_name: string | null
   bio: string | null
   avatar_url: string | null
+  is_private?: boolean | null
 }
 
 type Props = {
@@ -14,9 +17,10 @@ type Props = {
   following: number
   isOwnProfile: boolean
   followButton?: React.ReactNode
+  canViewFollows: boolean
 }
 
-export default function ProfileHeader({ profile, followers, following, isOwnProfile, followButton }: Props) {
+export default function ProfileHeader({ profile, followers, following, isOwnProfile, followButton, canViewFollows }: Props) {
   const displayName = profile.display_name || profile.username
   const initials = displayName.slice(0, 2).toUpperCase()
 
@@ -37,15 +41,29 @@ export default function ProfileHeader({ profile, followers, following, isOwnProf
         ) : followButton}
       </div>
       <div>
-        <h1 className="text-xl font-bold">{displayName}</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl font-bold">{displayName}</h1>
+          {profile.is_private && <Lock className="h-4 w-4 text-muted-foreground" />}
+        </div>
         <p className="text-muted-foreground text-sm">@{profile.username}</p>
       </div>
-      {profile.bio && (
-        <p className="text-sm">{profile.bio}</p>
-      )}
+      {profile.bio && <p className="text-sm">{profile.bio}</p>}
       <div className="flex gap-4 text-sm">
-        <span><strong>{following}</strong> <span className="text-muted-foreground">Following</span></span>
-        <span><strong>{followers}</strong> <span className="text-muted-foreground">Followers</span></span>
+        {canViewFollows ? (
+          <>
+            <Link href={`/profile/${profile.username}/following`} className="hover:underline">
+              <strong>{following}</strong> <span className="text-muted-foreground">Following</span>
+            </Link>
+            <Link href={`/profile/${profile.username}/followers`} className="hover:underline">
+              <strong>{followers}</strong> <span className="text-muted-foreground">Followers</span>
+            </Link>
+          </>
+        ) : (
+          <>
+            <span><strong>{following}</strong> <span className="text-muted-foreground">Following</span></span>
+            <span><strong>{followers}</strong> <span className="text-muted-foreground">Followers</span></span>
+          </>
+        )}
       </div>
     </div>
   )
