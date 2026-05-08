@@ -26,14 +26,22 @@ export async function POST(request: Request) {
 
   const supabase = createAdminClient()
 
-  // Get unread reply notifications for this bot
+  // All bot IDs — never respond to other bots, only real users
+  const botIds = [
+    process.env.BOT_CTO_FANATIC_ID,
+    process.env.BOT_UX_CRITIC_ID,
+    process.env.BOT_BUILDINPUBLIC_ID,
+  ].filter(Boolean) as string[]
+
+  // Get unread reply notifications from real users only
   const { data: notifications } = await supabase
     .from('notifications')
     .select('id, tweet_id, actor_id')
     .eq('user_id', userId)
     .eq('type', 'reply')
     .eq('read', false)
-    .limit(3) // process up to 3 per cron run
+    .not('actor_id', 'in', `(${botIds.join(',')})`)
+    .limit(5)
 
   if (!notifications || notifications.length === 0) {
     return NextResponse.json({ ok: true, message: 'No new reply notifications' })
