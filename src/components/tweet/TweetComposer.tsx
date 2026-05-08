@@ -37,8 +37,10 @@ export default function TweetComposer({ onSuccess, replyToId, placeholder = "Wha
 
     setImageUploading(true)
     const supabase = createClient()
-    const ext = file.name.split('.').pop()
-    const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+    // Sanitize extension — only allow known image types, never trust filename
+    const rawExt = file.name.split('.').pop()?.toLowerCase() ?? ''
+    const safeExt = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(rawExt) ? rawExt : 'jpg'
+    const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${safeExt}`
 
     const { error } = await supabase.storage.from('tweet-images').upload(path, file)
 
