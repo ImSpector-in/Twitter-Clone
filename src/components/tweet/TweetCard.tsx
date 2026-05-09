@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { formatDistanceToNow } from 'date-fns'
-import { Repeat2 } from 'lucide-react'
+import { Repeat2, MessageCircle, Heart, Bookmark, Repeat } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import DeleteTweetButton from './DeleteTweetButton'
 import LikeButton from './LikeButton'
@@ -19,7 +19,6 @@ type Props = {
   retweetedByUsername?: string
 }
 
-// Generate a consistent gradient for each user based on username
 const GRADIENTS = [
   'from-teal-400 to-cyan-600',
   'from-pink-400 to-rose-600',
@@ -59,20 +58,20 @@ export default function TweetCard({ tweet, currentUserId, retweetedByUsername }:
   return (
     <article
       onClick={handleCardClick}
-      className="flex flex-col border-b border-border/50 hover:bg-card/80 transition-all cursor-pointer group"
+      className="flex flex-col border-b border-border hover:bg-accent/30 transition-colors duration-150 cursor-pointer"
     >
       {/* Retweet header */}
       {(isRetweet || retweetedByUsername) && (
-        <div className="flex items-center gap-1.5 px-4 pt-2.5 text-xs text-muted-foreground" onClick={stopProp}>
-          <Repeat2 className="h-3.5 w-3.5 text-green-400" />
-          <span>{retweetedByUsername ?? tweet.profiles?.username} retweeted</span>
+        <div className="flex items-center gap-1.5 px-4 pt-3 text-xs text-muted-foreground" onClick={stopProp}>
+          <Repeat2 className="h-3.5 w-3.5 text-green-500" />
+          <span className="font-medium">{retweetedByUsername ?? tweet.profiles?.username} retweeted</span>
         </div>
       )}
 
       <div className="flex gap-3 px-4 py-3">
         {/* Avatar */}
         <div onClick={stopProp} className="shrink-0">
-          <Avatar className="h-10 w-10 ring-2 ring-border/50">
+          <Avatar className="h-10 w-10 ring-1 ring-black/10 dark:ring-white/10">
             <AvatarImage src={profile?.avatar_url ?? undefined} alt={displayName} />
             <AvatarFallback className={`bg-gradient-to-br ${gradient} text-white font-semibold text-sm`}>
               {initials}
@@ -80,7 +79,7 @@ export default function TweetCard({ tweet, currentUserId, retweetedByUsername }:
           </Avatar>
         </div>
 
-        <div className="flex-1 min-w-0 space-y-1.5">
+        <div className="flex-1 min-w-0 space-y-1">
           {/* Header row */}
           <div className="flex items-center gap-1.5 flex-wrap">
             <Link
@@ -97,25 +96,26 @@ export default function TweetCard({ tweet, currentUserId, retweetedByUsername }:
             >
               @{username}
             </Link>
-            <span className="text-muted-foreground/50 text-xs">·</span>
-            <span className="text-muted-foreground text-xs">
+            <span className="text-muted-foreground/40 text-xs select-none">·</span>
+            {/* Change 8: tabular numerals on timestamp */}
+            <span className="text-muted-foreground text-xs tabular-nums">
               {formatDistanceToNow(new Date(displayTweet.created_at), { addSuffix: true })}
             </span>
             {isHot && (
-              <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full bg-gradient-to-r from-orange-500 to-pink-500 text-white tracking-wide">
-                HOT
+              <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full bg-gradient-to-r from-orange-500 to-pink-500 text-white tracking-wide uppercase">
+                Hot
               </span>
             )}
           </div>
 
-          {/* Content */}
+          {/* Change 5: 15px body text instead of text-sm */}
           {displayTweet.content && (
-            <p className="text-sm leading-relaxed whitespace-pre-wrap break-words text-foreground/90">
+            <p className="text-[15px] leading-normal whitespace-pre-wrap break-words text-foreground/90">
               {displayTweet.content}
             </p>
           )}
 
-          {/* Image */}
+          {/* Image — Change 9: rounded-2xl, clean border */}
           {displayTweet.image_url && (
             <div onClick={stopProp} className="mt-2">
               <Image
@@ -123,30 +123,48 @@ export default function TweetCard({ tweet, currentUserId, retweetedByUsername }:
                 alt="Tweet image"
                 width={500}
                 height={300}
-                className="rounded-xl object-cover max-h-80 w-full cursor-default border border-border/30"
+                className="rounded-2xl object-cover max-h-80 w-full cursor-default border border-border"
               />
             </div>
           )}
 
-          {/* Action row */}
-          <div className="flex items-center gap-5 pt-1.5" onClick={stopProp}>
-            <ReplyButton tweetId={displayTweet.id} replyCount={tweet.reply_count} />
-            <RetweetButton
-              tweetId={isRetweet ? displayTweet.id : tweet.id}
-              initialRetweeted={tweet.retweeted_by_me}
-              initialCount={tweet.retweet_count}
-            />
-            <LikeButton
-              tweetId={isRetweet ? displayTweet.id : tweet.id}
-              initialLiked={tweet.liked_by_me}
-              initialCount={tweet.like_count}
-            />
-            <BookmarkButton
-              tweetId={isRetweet ? displayTweet.id : tweet.id}
-              initialBookmarked={tweet.bookmarked_by_me}
-            />
+          {/* Change 6: themed action hovers — blue/green/rose/primary per action */}
+          <div className="flex items-center gap-1 pt-1 -ml-2" onClick={stopProp}>
+            {/* Reply — blue */}
+            <div className="group flex items-center gap-1 px-2 py-1.5 rounded-full hover:bg-blue-500/10 transition-colors duration-150">
+              <ReplyButton tweetId={displayTweet.id} replyCount={tweet.reply_count} />
+            </div>
+
+            {/* Retweet — green */}
+            <div className="group flex items-center gap-1 px-2 py-1.5 rounded-full hover:bg-green-500/10 transition-colors duration-150">
+              <RetweetButton
+                tweetId={isRetweet ? displayTweet.id : tweet.id}
+                initialRetweeted={tweet.retweeted_by_me}
+                initialCount={tweet.retweet_count}
+              />
+            </div>
+
+            {/* Like — rose */}
+            <div className="group flex items-center gap-1 px-2 py-1.5 rounded-full hover:bg-rose-500/10 transition-colors duration-150">
+              <LikeButton
+                tweetId={isRetweet ? displayTweet.id : tweet.id}
+                initialLiked={tweet.liked_by_me}
+                initialCount={tweet.like_count}
+              />
+            </div>
+
+            {/* Bookmark — primary teal */}
+            <div className="group flex items-center gap-1 px-2 py-1.5 rounded-full hover:bg-primary/10 transition-colors duration-150">
+              <BookmarkButton
+                tweetId={isRetweet ? displayTweet.id : tweet.id}
+                initialBookmarked={tweet.bookmarked_by_me}
+              />
+            </div>
+
             {(isRetweet ? displayTweet.user_id : tweet.user_id) === currentUserId && (
-              <DeleteTweetButton tweetId={tweet.id} />
+              <div className="px-2 py-1.5">
+                <DeleteTweetButton tweetId={tweet.id} />
+              </div>
             )}
           </div>
         </div>

@@ -33,7 +33,7 @@ export default function ReplyButton({ tweetId, replyCount, replyScope = 'everyon
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-blue-500 transition-colors"
+        className="flex items-center gap-1 text-xs text-muted-foreground group-hover:text-blue-500 transition-colors tabular-nums"
       >
         <MessageCircle className="h-4 w-4" />
         {replyCount > 0 && <span>{replyCount}</span>}

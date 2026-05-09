@@ -28,7 +28,7 @@ export default function RetweetButton({ tweetId, initialRetweeted, initialCount 
   return (
     <button
       onClick={handleClick}
-      className={`flex items-center gap-1 text-xs transition-colors hover:text-green-500 ${retweeted ? 'text-green-500' : 'text-muted-foreground'}`}
+      className={`flex items-center gap-1 text-xs transition-colors group-hover:text-green-500 tabular-nums ${retweeted ? 'text-green-500' : 'text-muted-foreground'}`}
     >
       <Repeat2 className="h-4 w-4" />
       {count > 0 && <span>{count}</span>}
