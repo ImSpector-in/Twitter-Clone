@@ -7,6 +7,7 @@ import { Menu, Home, Search, TrendingUp, Bookmark, Bell, User, Settings, LogOut,
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { createClient } from '@/lib/supabase/client'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import QuotoraLogo from '@/components/ui/QuotoraLogo'
 
 type Props = {
   username: string
@@ -52,9 +53,13 @@ export default function MobileMenu({ username, displayName, avatarUrl, unreadCou
         <SheetContent side="left" className="w-72 p-0">
           <SheetHeader className="p-4 border-b">
             <SheetTitle className="text-left">
+              <div className="flex items-center gap-2 mb-3">
+                <QuotoraLogo size={26} />
+                <span className="font-bold">Quotora</span>
+              </div>
               <div className="flex items-center gap-3">
                 <Avatar className="h-10 w-10">
-                  <AvatarFallback className="bg-gradient-to-br from-primary to-cyan-400 text-white">
+                  <AvatarFallback className="bg-gradient-to-br from-primary to-orange-400 text-white">
                     {initials}
                   </AvatarFallback>
                   <AvatarImage src={avatarUrl ?? undefined} />

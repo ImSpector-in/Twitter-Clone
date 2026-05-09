@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Twitter Clone",
-  description: "A Twitter clone built with Next.js and Supabase",
+  title: "Quotora",
+  description: "Share thoughts. Spark connections.",
 };
 
 export default function RootLayout({

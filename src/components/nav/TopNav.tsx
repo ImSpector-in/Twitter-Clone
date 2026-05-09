@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import TweetComposer from '@/components/tweet/TweetComposer'
+import QuotoraLogo from '@/components/ui/QuotoraLogo'
 
 type Props = {
   username: string
@@ -33,10 +34,8 @@ export default function TopNav({ username, displayName, avatarUrl }: Props) {
         <div className="max-w-7xl mx-auto px-4 h-14 flex items-center gap-4">
           {/* Logo */}
           <Link href="/home" className="flex items-center gap-2 shrink-0">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-pink-500 flex items-center justify-center text-white font-black text-sm">
-              𝕏
-            </div>
-            <span className="font-bold text-base hidden sm:block">Wavr</span>
+            <QuotoraLogo size={34} />
+            <span className="font-bold text-lg hidden sm:block tracking-tight">Quotora</span>
           </Link>
 
           {/* Search */}
