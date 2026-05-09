@@ -11,6 +11,7 @@ import LikeButton from './LikeButton'
 import ReplyButton from './ReplyButton'
 import RetweetButton from './RetweetButton'
 import BookmarkButton from './BookmarkButton'
+import ShareButton from './ShareButton'
 import type { TweetWithProfile } from '@/types'
 
 type Props = {
@@ -120,36 +121,43 @@ export default function TweetCard({ tweet, currentUserId, retweetedByUsername }:
             </div>
           )}
 
-          {/* Action bar */}
-          <div className="flex items-center gap-1 pt-1 -ml-2" onClick={stopProp}>
-            <div className="group flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-blue-500/10 transition-colors duration-150">
-              <ReplyButton tweetId={displayTweet.id} replyCount={tweet.reply_count} />
+          {/* Action bar — left cluster + bookmark on right like Hivit */}
+          <div className="flex items-center justify-between pt-1" onClick={stopProp}>
+            {/* Left: reply, retweet, like, share */}
+            <div className="flex items-center gap-0.5 -ml-2">
+              <div className="group flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-blue-500/10 transition-colors duration-150">
+                <ReplyButton tweetId={displayTweet.id} replyCount={tweet.reply_count} />
+              </div>
+              <div className="group flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-green-500/10 transition-colors duration-150">
+                <RetweetButton
+                  tweetId={isRetweet ? displayTweet.id : tweet.id}
+                  initialRetweeted={tweet.retweeted_by_me}
+                  initialCount={tweet.retweet_count}
+                />
+              </div>
+              <div className="group flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-rose-500/10 transition-colors duration-150">
+                <LikeButton
+                  tweetId={isRetweet ? displayTweet.id : tweet.id}
+                  initialLiked={tweet.liked_by_me}
+                  initialCount={tweet.like_count}
+                />
+              </div>
+              <div className="group flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-blue-400/10 transition-colors duration-150">
+                <ShareButton tweetId={displayTweet.id} />
+              </div>
+              {(isRetweet ? displayTweet.user_id : tweet.user_id) === currentUserId && (
+                <div className="px-2 py-1.5">
+                  <DeleteTweetButton tweetId={tweet.id} />
+                </div>
+              )}
             </div>
-            <div className="group flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-green-500/10 transition-colors duration-150">
-              <RetweetButton
-                tweetId={isRetweet ? displayTweet.id : tweet.id}
-                initialRetweeted={tweet.retweeted_by_me}
-                initialCount={tweet.retweet_count}
-              />
-            </div>
-            <div className="group flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-rose-500/10 transition-colors duration-150">
-              <LikeButton
-                tweetId={isRetweet ? displayTweet.id : tweet.id}
-                initialLiked={tweet.liked_by_me}
-                initialCount={tweet.like_count}
-              />
-            </div>
+            {/* Right: bookmark separated like Hivit */}
             <div className="group flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-primary/10 transition-colors duration-150">
               <BookmarkButton
                 tweetId={isRetweet ? displayTweet.id : tweet.id}
                 initialBookmarked={tweet.bookmarked_by_me}
               />
             </div>
-            {(isRetweet ? displayTweet.user_id : tweet.user_id) === currentUserId && (
-              <div className="px-2 py-1.5">
-                <DeleteTweetButton tweetId={tweet.id} />
-              </div>
-            )}
           </div>
         </div>
       </div>
