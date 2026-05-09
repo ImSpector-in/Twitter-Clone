@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, Search, TrendingUp, Bookmark, User, Settings, LogOut, Feather } from 'lucide-react'
+import { Home, Search, Bell, TrendingUp, Bookmark, User, Settings, LogOut, Feather } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -19,6 +19,7 @@ type Props = {
 const navItems = (username: string) => [
   { href: '/home', label: 'Home', icon: Home },
   { href: '/discover', label: 'Search', icon: Search },
+  { href: '/notifications', label: 'Notifications', icon: Bell },
   { href: '/trending', label: 'Trending', icon: TrendingUp },
   { href: '/bookmarks', label: 'Bookmarks', icon: Bookmark },
   { href: `/profile/${username}`, label: 'Profile', icon: User },
@@ -50,6 +51,7 @@ export default function Sidebar({ username, userId, unreadCount }: Props) {
 
         {navItems(username).map(({ href, label, icon: Icon }) => {
           const active = pathname === href || (href.includes('/profile/') && pathname.startsWith('/profile/'))
+          const isNotifications = href === '/notifications'
           return (
             <Link
               key={href}
@@ -60,13 +62,18 @@ export default function Sidebar({ username, userId, unreadCount }: Props) {
                   : 'font-medium text-muted-foreground hover:text-foreground hover:bg-accent/50'
                 }`}
             >
-              <Icon className={`h-5 w-5 shrink-0 ${active ? 'stroke-[2.5px]' : ''}`} />
+              <div className="relative">
+                <Icon className={`h-5 w-5 shrink-0 ${active ? 'stroke-[2.5px]' : ''}`} />
+                {isNotifications && unreadCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-primary text-primary-foreground text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </div>
               <span className="hidden xl:inline">{label}</span>
             </Link>
           )
         })}
-
-        <NotificationBell initialCount={unreadCount} userId={userId} />
 
         {/* Post button with teal gradient */}
         <Button
