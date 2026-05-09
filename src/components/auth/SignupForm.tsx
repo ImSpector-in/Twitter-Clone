@@ -41,14 +41,14 @@ export default function SignupForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
       <div className="relative">
-        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-orange-400 pointer-events-none" />
         <input type="email" placeholder="Email address" value={email}
           onChange={(e) => setEmail(e.target.value)} required
           className={`${inputClass} pl-12 pr-5`}
         />
       </div>
       <div className="relative">
-        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-orange-400 pointer-events-none" />
         <input type={showPassword ? 'text' : 'password'} placeholder="Password (min 6 characters)"
           value={password} onChange={(e) => setPassword(e.target.value)} minLength={6} required
           className={`${inputClass} pl-12 pr-12`}
@@ -60,7 +60,7 @@ export default function SignupForm() {
       </div>
       {error && <p className="text-sm text-red-500 text-center">{error}</p>}
       <button type="submit" disabled={loading}
-        className="w-full h-14 rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold text-base hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 shadow-md shadow-orange-200">
+        className="w-full h-14 rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold text-lg hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50">
         {loading ? 'Creating account...' : 'Create Account'}
       </button>
     </form>

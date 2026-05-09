@@ -20,8 +20,7 @@ export default function LoginForm() {
   const inputClass = "w-full h-14 rounded-2xl border border-gray-200 bg-white text-gray-800 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent text-sm transition-all"
 
   async function handleLogin(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true); setError('')
+    e.preventDefault(); setLoading(true); setError('')
     const supabase = createClient()
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) { setError(error.message); setLoading(false); return }
@@ -58,29 +57,27 @@ export default function LoginForm() {
           className="w-full h-14 rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold text-base hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50">
           {loading ? 'Verifying...' : 'Verify'}
         </button>
-        <button type="button" onClick={() => setShowMFA(false)} className="w-full text-sm text-gray-400 hover:text-gray-600">Back to login</button>
+        <button type="button" onClick={() => setShowMFA(false)} className="w-full text-sm text-gray-400 hover:text-gray-600">Back</button>
       </form>
     )
   }
 
   return (
     <form onSubmit={handleLogin} className="space-y-3">
-      {/* Email */}
+      {/* Email — orange icon */}
       <div className="relative">
-        <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+        <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-orange-400 pointer-events-none" />
         <input type="email" placeholder="Username or email" value={email}
           onChange={(e) => setEmail(e.target.value)} required
           className={`${inputClass} pl-12 pr-5`}
         />
       </div>
 
-      {/* Password */}
+      {/* Password — orange icon */}
       <div className="relative">
-        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
-        <input
-          type={showPassword ? 'text' : 'password'}
-          placeholder="Password" value={password}
-          onChange={(e) => setPassword(e.target.value)} required
+        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-orange-400 pointer-events-none" />
+        <input type={showPassword ? 'text' : 'password'} placeholder="Password"
+          value={password} onChange={(e) => setPassword(e.target.value)} required
           className={`${inputClass} pl-12 pr-12`}
         />
         <button type="button" onClick={() => setShowPassword(p => !p)}
@@ -99,7 +96,7 @@ export default function LoginForm() {
       {error && <p className="text-sm text-red-500 text-center">{error}</p>}
 
       <button type="submit" disabled={loading}
-        className="w-full h-14 rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold text-base hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 shadow-md shadow-orange-200">
+        className="w-full h-14 rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold text-lg hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50">
         {loading ? 'Logging in...' : 'Log In'}
       </button>
     </form>

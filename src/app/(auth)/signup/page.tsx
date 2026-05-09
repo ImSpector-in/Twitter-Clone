@@ -5,25 +5,26 @@ import Link from 'next/link'
 
 export default function SignupPage() {
   return (
-    <div className="min-h-screen bg-[#fdf5f0] flex items-center justify-center relative overflow-hidden py-10">
-      <div className="absolute -top-32 -left-32 w-80 h-80 rounded-full bg-orange-100/80 blur-sm" />
-      <div className="absolute top-10 -left-10 w-48 h-48 rounded-full bg-orange-200/40" />
-      <div className="absolute -bottom-40 -right-40 w-96 h-96 rounded-full bg-orange-400/30 blur-md" />
-      <div className="absolute bottom-10 right-10 w-32 h-32 rounded-full bg-red-400/20" />
+    <div className="min-h-screen bg-[#fdf0ea] flex items-center justify-center relative overflow-hidden py-12 px-4">
+      <div className="absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full bg-[#f9d5c0]/60" />
+      <div className="absolute -bottom-32 -left-20 w-80 h-80 rounded-full bg-gradient-to-tr from-red-500/70 to-orange-400/60" />
+      <div className="absolute -right-32 top-1/4 w-72 h-72 rounded-full bg-[#f9d5c0]/40" />
 
-      <div className="relative z-10 w-full max-w-sm mx-6 space-y-5">
-        <div className="text-center space-y-2">
-          <div className="flex justify-center">
-            <QuotoraLogo size={80} />
+      <div className="relative z-10 w-full max-w-md space-y-6">
+        <div className="flex flex-col items-center gap-1">
+          <div className="flex items-center gap-3">
+            <QuotoraLogo size={64} />
+            <span className="text-5xl font-extrabold text-orange-600 tracking-tight">Quotora</span>
           </div>
-          <h1 className="text-3xl font-extrabold text-orange-600 tracking-tight">Join Quotora</h1>
-          <p className="text-xs font-bold tracking-[0.2em] text-orange-500 uppercase">
+          <p className="text-[11px] font-bold tracking-[0.22em] text-orange-500 uppercase mt-1">
             Share thoughts. Spark connections.
           </p>
         </div>
 
-        <SignupForm />
-        <SocialAuthButtons />
+        <div className="bg-white rounded-3xl shadow-xl p-8 space-y-4">
+          <SignupForm />
+          <SocialAuthButtons />
+        </div>
 
         <p className="text-center text-sm text-gray-500">
           Already have an account?{' '}
