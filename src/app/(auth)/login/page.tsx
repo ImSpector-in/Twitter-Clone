@@ -5,20 +5,17 @@ import Link from 'next/link'
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen bg-[#fdf5f0] flex items-center justify-center relative overflow-hidden">
-      {/* Top-left wave decoration */}
-      <div className="absolute -top-24 -left-24 w-64 h-64 rounded-full bg-orange-100/70" />
-      <div className="absolute -top-10 -left-10 w-40 h-40 rounded-full bg-orange-200/40" />
+    <div className="min-h-screen bg-[#fdf5f0] flex items-center justify-center relative overflow-hidden py-10">
+      {/* Background blobs — purely decorative, don't interfere with content */}
+      <div className="absolute -top-32 -left-32 w-80 h-80 rounded-full bg-orange-100/80 blur-sm" />
+      <div className="absolute top-10 -left-10 w-48 h-48 rounded-full bg-orange-200/40" />
+      <div className="absolute -bottom-40 -right-40 w-96 h-96 rounded-full bg-orange-400/30 blur-md" />
+      <div className="absolute bottom-10 right-10 w-32 h-32 rounded-full bg-red-400/20" />
 
-      {/* Bottom wave decoration */}
-      <div className="absolute bottom-0 left-0 right-0 h-40 overflow-hidden">
-        <div className="absolute bottom-0 left-0 right-0 h-56 bg-gradient-to-r from-orange-500 to-red-500 rounded-t-[60%] translate-y-8" />
-      </div>
-
-      {/* Card */}
-      <div className="relative z-10 w-full max-w-sm mx-4 space-y-6">
-        {/* Logo + name */}
-        <div className="text-center space-y-2 pt-4">
+      {/* Content — always above blobs */}
+      <div className="relative z-10 w-full max-w-sm mx-6 space-y-5">
+        {/* Logo */}
+        <div className="text-center space-y-2">
           <div className="flex justify-center">
             <QuotoraLogo size={90} />
           </div>
@@ -28,16 +25,10 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Form */}
-        <div className="space-y-4">
-          <LoginForm />
-        </div>
-
-        {/* Social auth */}
+        <LoginForm />
         <SocialAuthButtons />
 
-        {/* Sign up link */}
-        <p className="text-center text-sm text-gray-500 pb-8">
+        <p className="text-center text-sm text-gray-500">
           Don&apos;t have an account?{' '}
           <Link href="/signup" className="text-orange-500 font-semibold hover:text-orange-600 transition-colors">
             Sign up
