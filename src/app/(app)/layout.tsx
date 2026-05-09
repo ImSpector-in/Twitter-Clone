@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { getUnreadCount } from '@/lib/queries/notifications'
+import TopNav from '@/components/nav/TopNav'
 import Sidebar from '@/components/nav/Sidebar'
 import BottomNav from '@/components/nav/BottomNav'
 import MobileMenu from '@/components/nav/MobileMenu'
@@ -26,31 +27,38 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const unreadCount = await getUnreadCount(user.id)
 
   return (
-    <div className="min-h-screen flex justify-center">
-      <div className="flex w-full max-w-5xl">
-        {/* Sidebar — hidden on mobile */}
-        <aside className="hidden md:flex w-16 xl:w-64 shrink-0 border-r flex-col sticky top-0 h-screen">
-          <Sidebar username={username} userId={user.id} unreadCount={unreadCount} />
+    <div className="min-h-screen bg-background">
+      {/* Top navigation bar */}
+      <TopNav username={username} displayName={displayName} avatarUrl={avatarUrl} />
+
+      {/* Page body */}
+      <div className="max-w-7xl mx-auto px-4 flex gap-6 pt-4 pb-20 md:pb-4">
+
+        {/* Left sidebar */}
+        <aside className="hidden md:block w-56 shrink-0">
+          <div className="sticky top-20">
+            <Sidebar username={username} unreadCount={unreadCount} />
+          </div>
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 min-w-0 border-r max-w-2xl pb-16 md:pb-0">
+        <main className="flex-1 min-w-0 max-w-2xl">
           {children}
         </main>
 
-        {/* Right column */}
-        <div className="hidden lg:block w-80 shrink-0 p-4 space-y-4">
-          <Suspense fallback={<div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">Loading news...</div>}>
-            <TrendingSidebar />
-          </Suspense>
-        </div>
+        {/* Right sidebar */}
+        <aside className="hidden lg:block w-72 shrink-0">
+          <div className="sticky top-20 space-y-4">
+            <Suspense fallback={<div className="rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground">Loading...</div>}>
+              <TrendingSidebar />
+            </Suspense>
+          </div>
+        </aside>
       </div>
 
-      {/* Bottom nav — mobile only */}
+      {/* Mobile nav */}
       <BottomNav username={username} />
       <FloatingPostButton />
-
-      {/* Mobile slide-in menu */}
       <MobileMenu
         username={username}
         displayName={displayName}

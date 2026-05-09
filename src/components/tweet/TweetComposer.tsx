@@ -89,7 +89,7 @@ export default function TweetComposer({ onSuccess, replyToId, placeholder = "Wha
   }
 
   return (
-    <form onSubmit={handleSubmit} className="p-4 space-y-3 border-b border-border/50">
+    <form onSubmit={handleSubmit} className="bg-card border border-border rounded-2xl p-4 space-y-3 mb-3">
       <Textarea
         placeholder={placeholder}
         value={content}

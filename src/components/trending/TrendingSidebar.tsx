@@ -16,7 +16,7 @@ export default async function TrendingSidebar() {
   ]
 
   return (
-    <div className="rounded-xl border bg-card overflow-hidden">
+    <div className="rounded-2xl border border-border bg-card overflow-hidden">
       <div className="px-4 py-3 border-b flex items-center justify-between">
         <h3 className="font-bold text-base flex items-center gap-2">
           <TrendingUp className="h-4 w-4" />

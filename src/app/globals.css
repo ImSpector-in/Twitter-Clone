@@ -74,12 +74,12 @@
   --sidebar-ring: oklch(0.54 0.14 196);
 }
 
-/* ── Dark mode — 4-step surface elevation ── */
+/* ── Dark mode — near-black Hivit-style ── */
 .dark {
-  /* Surface tier 1 — page base */
-  --background: oklch(0.10 0.015 250);
-  /* Surface tier 2 — cards, sidebar */
-  --card: oklch(0.14 0.015 250);
+  /* Page background — near black */
+  --background: oklch(0.09 0.005 250);
+  /* Cards — slightly elevated */
+  --card: oklch(0.13 0.008 250);
   --card-foreground: oklch(0.96 0.005 250);
   /* Surface tier 3 — dropdowns, popovers */
   --popover: oklch(0.18 0.015 250);
