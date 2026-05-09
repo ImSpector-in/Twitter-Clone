@@ -8,28 +8,45 @@ export default function QuotoraLogo({ size = 32, className = '' }: Props) {
     <svg
       width={size}
       height={size}
-      viewBox="0 0 100 100"
+      viewBox="0 0 100 115"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
     >
       <defs>
-        <linearGradient id="qgrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#ff6b1a" />
-          <stop offset="100%" stopColor="#e02d00" />
+        <linearGradient id="og" x1="20%" y1="0%" x2="80%" y2="100%">
+          <stop offset="0%" stopColor="#FF7A00" />
+          <stop offset="100%" stopColor="#E02200" />
+        </linearGradient>
+        <linearGradient id="og2" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#FF8C00" />
+          <stop offset="100%" stopColor="#E03000" />
         </linearGradient>
       </defs>
-      {/* Speech bubble / Q shape */}
+
+      {/* Outer orange circle */}
+      <circle cx="50" cy="48" r="46" fill="url(#og)" />
+
+      {/* White inner circle — creates the ring effect */}
+      <circle cx="50" cy="46" r="30" fill="white" />
+
+      {/* Speech bubble tail — curves to lower-left like a Q tail */}
       <path
-        d="M50 5C25.1 5 5 23.4 5 46c0 12.6 5.8 23.9 15 31.7L16 90l13.5-6.8C34.8 85 42.2 87 50 87c24.9 0 45-18.4 45-41S74.9 5 50 5z"
-        fill="url(#qgrad)"
+        d="M 18 82 C 10 100 6 108 22 104 C 26 103 34 97 34 90 C 28 88 22 86 18 82 Z"
+        fill="url(#og)"
       />
-      {/* Three horizontal lines representing text/quotes */}
-      <rect x="26" y="34" width="36" height="7" rx="3.5" fill="white" />
-      <rect x="26" y="47" width="28" height="7" rx="3.5" fill="white" />
-      <rect x="26" y="60" width="20" height="7" rx="3.5" fill="white" />
-      {/* Dot on right of first line (like a bullet/quote mark) */}
-      <circle cx="68" cy="37.5" r="4" fill="white" />
+
+      {/* Text lines inside white area — orange gradient */}
+      {/* Line 1 (shorter, left) */}
+      <rect x="29" y="32" width="16" height="6" rx="3" fill="url(#og2)" />
+      {/* Dot (right of line 1) */}
+      <circle cx="52" cy="35" r="3.5" fill="url(#og2)" />
+
+      {/* Line 2 (medium) */}
+      <rect x="29" y="43" width="22" height="6" rx="3" fill="url(#og2)" />
+
+      {/* Line 3 (shortest) */}
+      <rect x="29" y="54" width="16" height="6" rx="3" fill="url(#og2)" />
     </svg>
   )
 }
