@@ -32,6 +32,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+          <div id="aurora-bg" aria-hidden="true" />
           {children}
           <Toaster />
         </ThemeProvider>
