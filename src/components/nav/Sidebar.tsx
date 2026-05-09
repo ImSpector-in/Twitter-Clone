@@ -8,7 +8,6 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import TweetComposer from '@/components/tweet/TweetComposer'
-import NotificationBell from '@/components/notifications/NotificationBell'
 
 type Props = {
   username: string
