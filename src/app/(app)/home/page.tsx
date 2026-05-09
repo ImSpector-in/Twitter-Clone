@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getFeedTweets, getAllTweets } from '@/lib/queries/tweets'
 import HomeTabs from '@/components/home/HomeTabs'
 import TweetList from '@/components/tweet/TweetList'
-import TweetComposer from '@/components/tweet/TweetComposer'
+import HomeComposer from '@/components/tweet/HomeComposer'
 import { TweetListSkeleton } from '@/components/tweet/TweetSkeleton'
 
 type Props = {
@@ -33,8 +33,8 @@ export default async function HomePage({ searchParams }: Props) {
 
   return (
     <div>
-      {/* Composer above tabs — like Hivit */}
-      <TweetComposer />
+      {/* Hivit-style compact composer */}
+      <HomeComposer />
 
       {/* For You / Following tabs */}
       <Suspense>
