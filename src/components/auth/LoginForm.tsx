@@ -2,11 +2,10 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { User, Lock } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import PasswordInput from '@/components/ui/password-input'
 import Link from 'next/link'
+import PasswordInput from '@/components/ui/password-input'
 
 export default function LoginForm() {
   const [email, setEmail] = useState('')
@@ -22,86 +21,43 @@ export default function LoginForm() {
     e.preventDefault()
     setLoading(true)
     setError('')
-
     const supabase = createClient()
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-
-    if (error) {
-      setError(error.message)
-      setLoading(false)
-      return
-    }
-
-    // Check if MFA is required
+    if (error) { setError(error.message); setLoading(false); return }
     const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
     if (aal?.nextLevel === 'aal2' && aal.nextLevel !== aal.currentLevel) {
-      // Get the factor ID
       const { data: factors } = await supabase.auth.mfa.listFactors()
       const totp = factors?.totp?.[0]
-      if (totp) {
-        setFactorId(totp.id)
-        setShowMFA(true)
-        setLoading(false)
-        return
-      }
+      if (totp) { setFactorId(totp.id); setShowMFA(true); setLoading(false); return }
     }
-
-    router.push('/home')
-    router.refresh()
+    router.push('/home'); router.refresh()
   }
 
   async function handleMFAVerify(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-
+    e.preventDefault(); setLoading(true); setError('')
     const supabase = createClient()
     const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({ factorId })
-    if (challengeError) {
-      setError('Failed to create challenge.')
-      setLoading(false)
-      return
-    }
-
-    const { error: verifyError } = await supabase.auth.mfa.verify({
-      factorId,
-      challengeId: challenge.id,
-      code: mfaCode,
-    })
-
-    if (verifyError) {
-      setError('Invalid code. Try again.')
-      setLoading(false)
-      return
-    }
-
-    router.push('/home')
-    router.refresh()
+    if (challengeError) { setError('Failed to create challenge.'); setLoading(false); return }
+    const { error: verifyError } = await supabase.auth.mfa.verify({ factorId, challengeId: challenge.id, code: mfaCode })
+    if (verifyError) { setError('Invalid code. Try again.'); setLoading(false); return }
+    router.push('/home'); router.refresh()
   }
 
   if (showMFA) {
     return (
       <form onSubmit={handleMFAVerify} className="space-y-4">
-        <div className="text-center space-y-1">
-          <p className="font-semibold">Two-factor authentication</p>
-          <p className="text-muted-foreground text-sm">Enter the 6-digit code from your authenticator app.</p>
-        </div>
-        <Input
-          type="text"
-          inputMode="numeric"
-          value={mfaCode}
+        <p className="text-center text-sm text-gray-500">Enter the 6-digit code from your authenticator app.</p>
+        <input type="text" inputMode="numeric" value={mfaCode}
           onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ''))}
-          placeholder="000000"
-          maxLength={6}
-          className="text-center text-lg tracking-widest"
-          autoFocus
-          required
+          placeholder="000000" maxLength={6} autoFocus required
+          className="w-full h-14 px-5 rounded-2xl border border-gray-200 bg-white text-center text-xl tracking-[0.5em] outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent"
         />
-        {error && <p className="text-sm text-destructive">{error}</p>}
-        <Button type="submit" className="w-full" disabled={loading || mfaCode.length !== 6}>
+        {error && <p className="text-sm text-red-500 text-center">{error}</p>}
+        <button type="submit" disabled={loading || mfaCode.length !== 6}
+          className="w-full h-14 rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold text-base hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50">
           {loading ? 'Verifying...' : 'Verify'}
-        </Button>
-        <button type="button" onClick={() => setShowMFA(false)} className="w-full text-sm text-muted-foreground hover:underline">
+        </button>
+        <button type="button" onClick={() => setShowMFA(false)} className="w-full text-sm text-gray-400 hover:text-gray-600">
           Back to login
         </button>
       </form>
@@ -109,37 +65,49 @@ export default function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleLogin} className="space-y-4">
-      <div className="space-y-2">
-        <Input
+    <form onSubmit={handleLogin} className="space-y-3">
+      {/* Email input with user icon */}
+      <div className="relative">
+        <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+        <input
           type="email"
-          placeholder="Email"
+          placeholder="Username or email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
+          className="w-full h-14 pl-12 pr-5 rounded-2xl border border-gray-200 bg-white text-gray-800 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent text-sm"
         />
+      </div>
+
+      {/* Password input with lock icon */}
+      <div className="relative">
+        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 z-10" />
         <PasswordInput
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
+          className="w-full h-14 pl-12 pr-12 rounded-2xl border border-gray-200 bg-white text-gray-800 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent text-sm"
         />
       </div>
-      {error && <p className="text-sm text-destructive">{error}</p>}
-      <Button type="submit" className="w-full" disabled={loading}>
-        {loading ? 'Logging in...' : 'Log in'}
-      </Button>
-      <div className="flex justify-between text-sm">
-        <p className="text-muted-foreground">
-          No account?{' '}
-          <Link href="/signup" className="text-primary hover:underline">
-            Sign up
-          </Link>
-        </p>
-        <Link href="/forgot-password" className="text-primary hover:underline">
+
+      {/* Forgot password */}
+      <div className="flex justify-end">
+        <Link href="/forgot-password" className="text-sm text-orange-500 font-semibold hover:text-orange-600 transition-colors">
           Forgot password?
         </Link>
       </div>
+
+      {error && <p className="text-sm text-red-500 text-center">{error}</p>}
+
+      {/* Log In button */}
+      <button
+        type="submit"
+        disabled={loading}
+        className="w-full h-14 rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold text-base hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 shadow-md shadow-orange-200"
+      >
+        {loading ? 'Logging in...' : 'Log In'}
+      </button>
     </form>
   )
 }
