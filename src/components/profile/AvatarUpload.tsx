@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { toast } from 'sonner'
-import { createClient } from '@/lib/supabase/client'
+import { updateAvatarUrl } from '@/lib/actions/profile'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 
@@ -29,36 +29,28 @@ export default function AvatarUpload({ userId, currentAvatarUrl, displayName, on
     }
 
     setUploading(true)
-    const supabase = createClient()
-    // Sanitize extension — only allow known image types, never trust filename
-    const rawExt = file.name.split('.').pop()?.toLowerCase() ?? ''
-    const safeExt = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(rawExt) ? rawExt : 'jpg'
-    const path = `${userId}/avatar.${safeExt}`
 
-    const { error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(path, file, { upsert: true })
+    // Q-008 + Q-025: Upload through server-side route for magic byte validation + random UUID path
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('bucket', 'avatars')
 
-    if (uploadError) {
-      toast.error(`Upload failed: ${uploadError.message}`)
+    const res = await fetch('/api/upload', { method: 'POST', body: formData })
+    const json = await res.json()
+
+    if (!res.ok) {
+      toast.error(json.error ?? 'Upload failed')
       setUploading(false)
       return
     }
 
-    const { data } = supabase.storage.from('avatars').getPublicUrl(path)
-    const publicUrl = `${data.publicUrl}?t=${Date.now()}` // cache bust
-
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update({ avatar_url: publicUrl })
-      .eq('id', userId)
-
-    if (updateError) {
-      toast.error('Failed to save avatar.')
-    } else {
-      setAvatarUrl(publicUrl)
-      onUpload?.(publicUrl)
+    try {
+      await updateAvatarUrl(json.url)
+      setAvatarUrl(json.url)
+      onUpload?.(json.url)
       toast.success('Avatar updated!')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save avatar.')
     }
 
     setUploading(false)
@@ -80,7 +72,7 @@ export default function AvatarUpload({ userId, currentAvatarUrl, displayName, on
         >
           {uploading ? 'Uploading...' : 'Change photo'}
         </Button>
-        <p className="text-xs text-muted-foreground">JPG, PNG, GIF · Max 2MB</p>
+        <p className="text-xs text-muted-foreground">JPG, PNG, GIF, WebP · Max 2MB</p>
       </div>
       <input
         ref={inputRef}

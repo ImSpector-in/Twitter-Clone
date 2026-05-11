@@ -5,20 +5,13 @@ import Image from 'next/image'
 import { ImageIcon, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { createTweet } from '@/lib/actions/tweets'
-import { createClient } from '@/lib/supabase/client'
+import { uploadImage } from '@/lib/uploadImage'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 type Props = {
   avatarUrl: string | null
   displayName: string
 }
-
-const GRADIENTS = [
-  'from-orange-400 to-pink-500',
-  'from-teal-400 to-cyan-500',
-  'from-violet-400 to-purple-500',
-  'from-blue-400 to-indigo-500',
-]
 
 export default function CompactComposer({ avatarUrl, displayName }: Props) {
   const [content, setContent] = useState('')
@@ -36,15 +29,14 @@ export default function CompactComposer({ avatarUrl, displayName }: Props) {
     const file = e.target.files?.[0]
     if (!file) return
     if (file.size > 5 * 1024 * 1024) { toast.error('Image must be under 5MB'); return }
+
     setImageUploading(true)
-    const supabase = createClient()
-    const rawExt = file.name.split('.').pop()?.toLowerCase() ?? ''
-    const safeExt = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(rawExt) ? rawExt : 'jpg'
-    const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${safeExt}`
-    const { error } = await supabase.storage.from('tweet-images').upload(path, file)
-    if (error) { toast.error('Image upload failed'); setImageUploading(false); return }
-    const { data } = supabase.storage.from('tweet-images').getPublicUrl(path)
-    setImageUrl(data.publicUrl)
+    try {
+      const url = await uploadImage(file, 'tweet-images')
+      setImageUrl(url)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Image upload failed')
+    }
     setImageUploading(false)
   }
 
@@ -58,8 +50,8 @@ export default function CompactComposer({ avatarUrl, displayName }: Props) {
       setContent('')
       setImageUrl(null)
       setExpanded(false)
-    } catch {
-      toast.error('Failed to post. Try again.')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to post. Try again.')
     }
     setLoading(false)
   }

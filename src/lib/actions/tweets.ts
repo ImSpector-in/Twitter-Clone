@@ -26,6 +26,15 @@ export async function createTweet(content: string, replyToId?: string, imageUrl?
   const validatedContent = validateContent(content)
   const validatedImageUrl = validateImageUrl(imageUrl)
 
+  // Q-020: DB-based rate limit — max 30 tweets per hour
+  const oneHourAgo = new Date(Date.now() - 3_600_000).toISOString()
+  const { count } = await supabase
+    .from('tweets')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .gte('created_at', oneHourAgo)
+  if ((count ?? 0) >= 30) throw new Error('You\'re posting too fast. Please wait a while.')
+
   // Validate replyToId is a UUID if provided
   if (replyToId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(replyToId)) {
     throw new Error('Invalid reply target')

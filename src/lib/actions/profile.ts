@@ -38,3 +38,21 @@ export async function updateProfile(formData: FormData) {
   revalidatePath(`/profile/${username}`)
   return { username }
 }
+
+export async function updateAvatarUrl(avatarUrl: string) {
+  if (!avatarUrl.startsWith('https://ujohfqnxtmoraufztjob.supabase.co/storage/v1/object/public/avatars/')) {
+    throw new Error('Invalid avatar URL')
+  }
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({ avatar_url: avatarUrl })
+    .eq('id', user.id)
+
+  if (error) throw new Error(error.message)
+  revalidatePath('/profile/edit')
+}

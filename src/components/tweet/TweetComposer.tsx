@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { ImageIcon, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { createTweet } from '@/lib/actions/tweets'
-import { createClient } from '@/lib/supabase/client'
+import { uploadImage } from '@/lib/uploadImage'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 
@@ -29,29 +29,15 @@ export default function TweetComposer({ onSuccess, replyToId, placeholder = "Wha
   async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image must be under 5MB')
-      return
-    }
+    if (file.size > 5 * 1024 * 1024) { toast.error('Image must be under 5MB'); return }
 
     setImageUploading(true)
-    const supabase = createClient()
-    // Sanitize extension — only allow known image types, never trust filename
-    const rawExt = file.name.split('.').pop()?.toLowerCase() ?? ''
-    const safeExt = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(rawExt) ? rawExt : 'jpg'
-    const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${safeExt}`
-
-    const { error } = await supabase.storage.from('tweet-images').upload(path, file)
-
-    if (error) {
-      toast.error('Image upload failed')
-      setImageUploading(false)
-      return
+    try {
+      const url = await uploadImage(file, 'tweet-images')
+      setImageUrl(url)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Image upload failed')
     }
-
-    const { data } = supabase.storage.from('tweet-images').getPublicUrl(path)
-    setImageUrl(data.publicUrl)
     setImageUploading(false)
   }
 
@@ -65,8 +51,8 @@ export default function TweetComposer({ onSuccess, replyToId, placeholder = "Wha
       setContent('')
       setImageUrl(null)
       onSuccess?.()
-    } catch {
-      toast.error('Failed to post. Try again.')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to post. Try again.')
     }
     setLoading(false)
   }
@@ -98,7 +84,6 @@ export default function TweetComposer({ onSuccess, replyToId, placeholder = "Wha
         className="resize-none border-none shadow-none focus-visible:ring-0 text-base p-0"
       />
 
-      {/* Image preview */}
       {imageUrl && (
         <div className="relative inline-block">
           <Image
@@ -137,13 +122,7 @@ export default function TweetComposer({ onSuccess, replyToId, placeholder = "Wha
         </Button>
       </div>
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={handleImageChange}
-      />
+      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
     </form>
   )
 }
