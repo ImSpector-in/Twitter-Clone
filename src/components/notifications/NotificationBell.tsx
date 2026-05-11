@@ -11,8 +11,9 @@ export default function NotificationBell({ initialCount, userId }: { initialCoun
   useEffect(() => {
     const supabase = createClient()
 
+    // Q-018: Scope channel name to this user so subscriptions can't cross users
     const channel = supabase
-      .channel('notifications')
+      .channel(`notifications-${userId}`)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },

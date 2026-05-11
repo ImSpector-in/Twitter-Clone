@@ -21,9 +21,14 @@ const BOT_PROFILES: Record<BotKey, { display_name: string; bio: string }> = {
 }
 
 export async function POST(request: Request) {
-  const auth = request.headers.get('authorization')
+  // Q-012: Timing-safe secret comparison
+  const auth = request.headers.get('authorization') ?? ''
   const secret = process.env.CRON_SECRET
-  if (!secret || auth !== `Bearer ${secret}`) {
+  if (!secret) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const expected = Buffer.from(`Bearer ${secret}`)
+  const received = Buffer.from(auth)
+  const { timingSafeEqual } = await import('crypto')
+  if (expected.length !== received.length || !timingSafeEqual(expected, received)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

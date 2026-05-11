@@ -7,9 +7,27 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createClient()
-    await supabase.auth.exchangeCodeForSession(code)
+    const { data: { user } } = await supabase.auth.exchangeCodeForSession(code)
+
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('id', user.id)
+        .single()
+
+      // New OAuth user — send them to set a real username
+      if (profile?.username?.startsWith('user_')) {
+        return NextResponse.redirect(`${origin}/profile/edit?welcome=1`)
+      }
+    }
   }
 
-  const next = searchParams.get('next') ?? '/home'
-  return NextResponse.redirect(`${origin}${next}`)
+  // Validate next param — must be a relative path, no protocol-relative tricks
+  const rawNext = searchParams.get('next') ?? '/home'
+  const safe = rawNext.startsWith('/') && !rawNext.startsWith('//') && !rawNext.startsWith('/\\')
+    ? rawNext
+    : '/home'
+
+  return NextResponse.redirect(`${origin}${safe}`)
 }

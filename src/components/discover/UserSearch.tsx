@@ -34,11 +34,14 @@ export default function UserSearch({ currentUserId }: { currentUserId: string })
     setLoading(true)
     const supabase = createClient()
 
+    // Q-009: Sanitize search value — strip PostgREST filter metacharacters
+    const sanitized = value.trim().replace(/[,.:()]/g, '')
+
     const [profilesResult, followsResult] = await Promise.all([
       supabase
         .from('profiles')
         .select('id, username, display_name, avatar_url, bio')
-        .or(`username.ilike.%${value.trim()}%,display_name.ilike.%${value.trim()}%`)
+        .or(`username.ilike.%${sanitized}%,display_name.ilike.%${sanitized}%`)
         .neq('id', currentUserId)
         .limit(10),
       supabase

@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { changeEmail } from '@/lib/actions/account'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import PasswordInput from '@/components/ui/password-input'
 
 export default function ChangeEmailForm({ currentEmail }: { currentEmail: string }) {
   const [loading, setLoading] = useState(false)
@@ -38,6 +39,7 @@ export default function ChangeEmailForm({ currentEmail }: { currentEmail: string
       {open && !sent && (
         <form onSubmit={handleSubmit} className="space-y-2 pt-2">
           <Input name="email" type="email" placeholder="New email address" required />
+          <PasswordInput name="current_password" placeholder="Current password to confirm" required />
           <Button type="submit" size="sm" disabled={loading}>{loading ? 'Sending...' : 'Send confirmation'}</Button>
         </form>
       )}

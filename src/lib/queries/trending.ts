@@ -15,7 +15,9 @@ function parseRSS(xml: string): NewsItem[] {
       return match ? match[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').trim() : ''
     }
     const title = get('title')
-    const link = get('link') || item.match(/<link>([\s\S]*?)<\/link>/)?.[1]?.trim() || ''
+    const rawLink = get('link') || item.match(/<link>([\s\S]*?)<\/link>/)?.[1]?.trim() || ''
+    // Q-028: Only allow http/https links from RSS feeds to prevent javascript: injection
+    const link = /^https?:\/\//i.test(rawLink) ? rawLink : ''
     const description = get('description').replace(/<[^>]+>/g, '').slice(0, 160)
     const pubDate = get('pubDate')
 

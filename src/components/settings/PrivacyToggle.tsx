@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { createClient } from '@/lib/supabase/client'
+import { updatePrivacy } from '@/lib/actions/settings'
 import { Lock, Globe } from 'lucide-react'
 
 export default function PrivacyToggle({ initialIsPrivate }: { initialIsPrivate: boolean }) {
@@ -11,19 +11,12 @@ export default function PrivacyToggle({ initialIsPrivate }: { initialIsPrivate: 
 
   async function handleToggle() {
     setLoading(true)
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    const { error } = await supabase
-      .from('profiles')
-      .update({ is_private: !isPrivate })
-      .eq('id', user!.id)
-
-    if (error) {
-      toast.error('Failed to update privacy setting.')
-    } else {
+    try {
+      await updatePrivacy(!isPrivate)
       setIsPrivate((prev) => !prev)
       toast.success(isPrivate ? 'Account set to public.' : 'Account set to private.')
+    } catch {
+      toast.error('Failed to update privacy setting.')
     }
     setLoading(false)
   }
@@ -36,8 +29,8 @@ export default function PrivacyToggle({ initialIsPrivate }: { initialIsPrivate: 
           <p className="font-medium text-sm">Private account</p>
           <p className="text-muted-foreground text-sm">
             {isPrivate
-              ? 'Only your followers can see your followers and following lists.'
-              : 'Anyone can see your followers and following lists.'}
+              ? 'Only your followers can see your tweets and follower lists.'
+              : 'Anyone can see your tweets and follower lists.'}
           </p>
         </div>
       </div>

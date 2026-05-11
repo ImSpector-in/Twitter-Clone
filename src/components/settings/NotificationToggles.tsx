@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { createClient } from '@/lib/supabase/client'
+import { updateNotificationPref } from '@/lib/actions/settings'
 
 type Props = {
   initialLikes: boolean
@@ -37,11 +37,12 @@ export default function NotificationToggles({ initialLikes, initialReplies, init
   const [replies, setReplies] = useState(initialReplies)
   const [follows, setFollows] = useState(initialFollows)
 
-  async function update(field: string, value: boolean) {
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    const { error } = await supabase.from('profiles').update({ [field]: value }).eq('id', user!.id)
-    if (error) toast.error('Failed to save preference.')
+  async function update(field: 'notify_likes' | 'notify_replies' | 'notify_follows', value: boolean) {
+    try {
+      await updateNotificationPref(field, value)
+    } catch {
+      toast.error('Failed to save preference.')
+    }
   }
 
   return (

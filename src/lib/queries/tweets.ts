@@ -148,12 +148,24 @@ export async function getTweetById(tweetId: string, userId?: string) {
 export async function getReplies(tweetId: string, userId?: string) {
   const supabase = await createClient()
 
-  const { data, error } = await supabase
+  // Q-027: Apply block/mute exclusions to thread replies
+  let excluded = new Set<string>()
+  if (userId) {
+    const result = await getExcludedUserIds(userId)
+    excluded = result.excluded
+  }
+
+  let query = supabase
     .from('tweets')
     .select(TWEET_SELECT)
     .eq('reply_to_id', tweetId)
     .order('created_at', { ascending: true })
 
+  if (excluded.size > 0) {
+    query = query.not('user_id', 'in', `(${[...excluded].join(',')})`)
+  }
+
+  const { data, error } = await query
   if (error) throw new Error(error.message)
   if (!userId) return data ?? []
   return attachLikedBy(data ?? [], userId)

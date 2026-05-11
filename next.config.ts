@@ -11,13 +11,37 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'api.dicebear.com',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.supabase.co',
-        pathname: '/storage/v1/object/public/**',
+        pathname: '/9.x/**',
       },
     ],
+  },
+
+  // Q-024: Security headers
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Referrer-Policy', value: 'same-origin' },
+          { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              "img-src 'self' https://ujohfqnxtmoraufztjob.supabase.co https://api.dicebear.com data: blob:",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              "style-src 'self' 'unsafe-inline'",
+              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.groq.com",
+              "font-src 'self' data:",
+              "frame-ancestors 'none'",
+            ].join('; '),
+          },
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+        ],
+      },
+    ]
   },
 };
 

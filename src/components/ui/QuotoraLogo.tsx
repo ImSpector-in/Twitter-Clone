@@ -28,7 +28,7 @@ export default function QuotoraLogo({ size = 32, className = '' }: Props) {
       <rect x="26" y="34" width="36" height="7" rx="3.5" fill="white" />
       <rect x="26" y="47" width="28" height="7" rx="3.5" fill="white" />
       <rect x="26" y="60" width="20" height="7" rx="3.5" fill="white" />
-      {/* Dot on right of first line (like a bullet/quote mark) */}
+      {/* Dot on right of first line */}
       <circle cx="68" cy="37.5" r="4" fill="white" />
     </svg>
   )

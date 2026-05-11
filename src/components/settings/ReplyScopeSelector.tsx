@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { createClient } from '@/lib/supabase/client'
+import { updateReplyScope } from '@/lib/actions/settings'
 import { Globe, Users, Lock } from 'lucide-react'
 
 const OPTIONS = [
@@ -15,14 +15,12 @@ export default function ReplyScopeSelector({ initialScope }: { initialScope: str
   const [scope, setScope] = useState(initialScope)
 
   async function handleChange(value: string) {
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    const { error } = await supabase.from('profiles').update({ reply_scope: value }).eq('id', user!.id)
-    if (error) {
-      toast.error('Failed to save preference.')
-    } else {
+    try {
+      await updateReplyScope(value)
       setScope(value)
       toast.success('Reply preference saved.')
+    } catch {
+      toast.error('Failed to save preference.')
     }
   }
 

@@ -37,7 +37,8 @@ export default function ChangePasswordForm() {
       </div>
       {open && (
         <form onSubmit={handleSubmit} className="space-y-2 pt-2">
-          <PasswordInput name="password" placeholder="New password" minLength={6} required />
+          <PasswordInput name="current_password" placeholder="Current password" required />
+          <PasswordInput name="password" placeholder="New password (min 12 characters)" minLength={12} required />
           <PasswordInput name="confirm" placeholder="Confirm new password" required />
           <Button type="submit" size="sm" disabled={loading}>{loading ? 'Saving...' : 'Save password'}</Button>
         </form>

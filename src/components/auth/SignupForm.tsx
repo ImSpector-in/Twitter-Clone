@@ -23,7 +23,16 @@ export default function SignupForm() {
       email, password,
       options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
     })
-    if (error) { setError(error.message); setLoading(false) }
+    if (error) {
+      // Q-023: Generic message to prevent account enumeration
+      const msg = error.message?.toLowerCase() ?? ''
+      if (msg.includes('already') || msg.includes('registered') || msg.includes('taken') || msg.includes('exist')) {
+        setError('If this email is available, you\'ll receive a confirmation email.')
+      } else {
+        setError(error.message)
+      }
+      setLoading(false)
+    }
     else if (data.session) { router.push('/home'); router.refresh() }
     else { setSuccess(true); setLoading(false) }
   }
@@ -49,8 +58,8 @@ export default function SignupForm() {
       </div>
       <div className="relative">
         <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-orange-400 pointer-events-none" />
-        <input type={showPassword ? 'text' : 'password'} placeholder="Password (min 6 characters)"
-          value={password} onChange={(e) => setPassword(e.target.value)} minLength={6} required
+        <input type={showPassword ? 'text' : 'password'} placeholder="Password (min 12 characters)"
+          value={password} onChange={(e) => setPassword(e.target.value)} minLength={12} required
           className={`${inputClass} pl-12 pr-12`}
         />
         <button type="button" onClick={() => setShowPassword(p => !p)}

@@ -18,6 +18,13 @@ export async function updateProfile(formData: FormData) {
     throw new Error('Username must be 3-20 characters: letters, numbers, underscores only')
   }
 
+  // Q-014: Server-side length limits and reject bidi override characters
+  if (display_name.length > 50) throw new Error('Display name cannot exceed 50 characters')
+  if (bio.length > 160) throw new Error('Bio cannot exceed 160 characters')
+  if (/[‪-‮⁦-⁩​-‏]/.test(display_name + bio + username)) {
+    throw new Error('Name contains invalid characters')
+  }
+
   const { error } = await supabase
     .from('profiles')
     .update({ username, display_name: display_name || null, bio: bio || null })

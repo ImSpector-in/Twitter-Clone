@@ -14,7 +14,7 @@ export default function SignupPage() {
         <div className="flex flex-col items-center gap-1">
           <div className="flex items-center gap-3">
             <QuotoraLogo size={64} />
-            <span className="text-5xl font-extrabold text-orange-600 tracking-tight">Quotora</span>
+            <span className="text-5xl font-extrabold text-orange-600 tracking-tight" style={{ fontFamily: 'var(--font-nunito)' }}>Quotora</span>
           </div>
           <p className="text-[11px] font-bold tracking-[0.22em] text-orange-500 uppercase mt-1">
             Share thoughts. Spark connections.

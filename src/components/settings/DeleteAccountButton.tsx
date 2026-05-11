@@ -4,14 +4,22 @@ import { useState } from 'react'
 import { deleteAccount } from '@/lib/actions/account'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import PasswordInput from '@/components/ui/password-input'
+import { toast } from 'sonner'
 
 export default function DeleteAccountButton() {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  async function handleDelete() {
+  async function handleDelete(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
     setLoading(true)
-    await deleteAccount()
+    try {
+      await deleteAccount(new FormData(e.currentTarget))
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete account.')
+      setLoading(false)
+    }
   }
 
   return (
@@ -31,12 +39,15 @@ export default function DeleteAccountButton() {
           <p className="text-sm text-muted-foreground">
             This will permanently delete your account, all your tweets, likes, follows, and notifications. This cannot be undone.
           </p>
-          <div className="flex gap-3 pt-2">
-            <Button variant="destructive" onClick={handleDelete} disabled={loading} className="flex-1">
-              {loading ? 'Deleting...' : 'Yes, delete my account'}
-            </Button>
-            <Button variant="outline" onClick={() => setOpen(false)} className="flex-1">Cancel</Button>
-          </div>
+          <form onSubmit={handleDelete} className="space-y-3 pt-2">
+            <PasswordInput name="password" placeholder="Enter your password to confirm" required />
+            <div className="flex gap-3">
+              <Button type="submit" variant="destructive" disabled={loading} className="flex-1">
+                {loading ? 'Deleting...' : 'Yes, delete my account'}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => setOpen(false)} className="flex-1">Cancel</Button>
+            </div>
+          </form>
         </DialogContent>
       </Dialog>
     </>

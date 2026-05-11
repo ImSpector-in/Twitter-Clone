@@ -1,11 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { Input } from '@/components/ui/input'
 import { formatDistanceToNow } from 'date-fns'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import Link from 'next/link'
+import { searchTweets } from '@/lib/actions/search'
 
 type Tweet = {
   id: string
@@ -29,17 +29,9 @@ export default function TweetSearch({ currentUserId }: { currentUserId: string }
     }
 
     setLoading(true)
-    const supabase = createClient()
-    const { data } = await supabase
-      .from('tweets')
-      .select('id, content, created_at, profiles!tweets_user_id_fkey (username, display_name, avatar_url)')
-      .ilike('content', `%${value.trim()}%`)
-      .is('reply_to_id', null)
-      .is('retweet_of_id', null)
-      .order('created_at', { ascending: false })
-      .limit(20)
-
-    setResults((data as any) ?? [])
+    // Q-010: Server-side search with block/mute exclusions
+    const data = await searchTweets(value.trim())
+    setResults(data)
     setSearched(true)
     setLoading(false)
   }
