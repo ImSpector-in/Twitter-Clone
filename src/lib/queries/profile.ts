@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { TWEET_SELECT } from '@/lib/queries/tweets'
 
 export async function getProfileByUsername(username: string) {
   const supabase = await createClient()
@@ -12,7 +13,8 @@ export async function getProfileByUsername(username: string) {
       bio,
       avatar_url,
       is_private,
-      created_at
+      created_at,
+      pinned_tweet_id
     `)
     .eq('username', username)
     .single()
@@ -26,21 +28,7 @@ export async function getTweetsByUserId(userId: string) {
 
   const { data, error } = await supabase
     .from('tweets')
-    .select(`
-      id,
-      content,
-      created_at,
-      user_id,
-      reply_to_id,
-      image_url,
-      profiles!tweets_user_id_fkey (
-        username,
-        display_name,
-        avatar_url
-      ),
-      likes (count),
-      replies:tweets!reply_to_id (count)
-    `)
+    .select(TWEET_SELECT)
     .eq('user_id', userId)
     .is('reply_to_id', null)
     .order('created_at', { ascending: false })

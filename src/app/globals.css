@@ -78,11 +78,11 @@
 .dark {
   /* Page background — near black */
   --background: oklch(0.09 0.005 250);
-  /* Cards — slightly elevated */
-  --card: oklch(0.13 0.008 250);
+  /* Cards — elevated enough to visibly pop off the background */
+  --card: oklch(0.17 0.010 250);
   --card-foreground: oklch(0.96 0.005 250);
   /* Surface tier 3 — dropdowns, popovers */
-  --popover: oklch(0.18 0.015 250);
+  --popover: oklch(0.21 0.015 250);
   --popover-foreground: oklch(0.96 0.005 250);
   /* Surface tier 4 — modals (handled by overlay color) */
   --foreground: oklch(0.96 0.005 250);
@@ -95,9 +95,9 @@
   --accent: oklch(0.21 0.008 250);
   --accent-foreground: oklch(0.96 0.005 250);
   --destructive: oklch(0.65 0.22 25);
-  /* Borders: white at 8% alpha — self-adjusts on any surface */
-  --border: oklch(1 0 0 / 8%);
-  --input: oklch(1 0 0 / 10%);
+  /* Borders: white at 14% alpha — visible definition without being harsh */
+  --border: oklch(1 0 0 / 14%);
+  --input: oklch(1 0 0 / 14%);
   --ring: oklch(0.68 0.21 42);
   --sidebar: oklch(0.11 0.005 250);
   --sidebar-foreground: oklch(0.96 0.005 250);

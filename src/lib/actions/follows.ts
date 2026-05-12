@@ -45,3 +45,21 @@ export async function toggleFollow(targetUserId: string, targetUsername: string)
   revalidatePath(`/profile/${targetUsername}`)
   revalidatePath('/home')
 }
+
+export async function getUserRelationship(targetUserId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { isFollowing: false, isMuted: false, isBlocked: false }
+
+  const [followCheck, muteCheck, blockCheck] = await Promise.all([
+    supabase.from('follows').select('follower_id').eq('follower_id', user.id).eq('following_id', targetUserId).maybeSingle(),
+    supabase.from('mutes').select('muter_id').eq('muter_id', user.id).eq('muted_id', targetUserId).maybeSingle(),
+    supabase.from('blocks').select('blocker_id').eq('blocker_id', user.id).eq('blocked_id', targetUserId).maybeSingle(),
+  ])
+
+  return {
+    isFollowing: !!followCheck.data,
+    isMuted: !!muteCheck.data,
+    isBlocked: !!blockCheck.data,
+  }
+}

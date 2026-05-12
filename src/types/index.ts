@@ -2,6 +2,7 @@ export type TweetWithProfile = {
   id: string
   content: string
   created_at: string
+  edited_at: string | null
   user_id: string
   reply_to_id: string | null
   retweet_of_id: string | null
@@ -21,6 +22,7 @@ export type TweetWithProfile = {
     id: string
     content: string
     created_at: string
+    edited_at: string | null
     user_id: string
     image_url: string | null
     profiles: {

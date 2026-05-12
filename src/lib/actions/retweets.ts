@@ -3,7 +3,6 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 
-const SUPABASE_STORAGE_PREFIX = 'https://ujohfqnxtmoraufztjob.supabase.co/storage/v1/object/public/'
 
 export async function retweet(tweetId: string) {
   const supabase = await createClient()
@@ -30,16 +29,21 @@ export async function retweet(tweetId: string) {
     if (block) throw new Error('Cannot retweet this tweet')
   }
 
-  const { data: existing } = await supabase
+  const { data: existingRows } = await supabase
     .from('tweets')
     .select('id')
     .eq('user_id', user.id)
     .eq('retweet_of_id', tweetId)
+    .eq('content', '')
     .is('reply_to_id', null)
-    .single()
 
-  if (existing) {
-    await supabase.from('tweets').delete().eq('id', existing.id)
+  if (existingRows && existingRows.length > 0) {
+    // Delete all matching rows — handles any stuck duplicates
+    await supabase.from('tweets').delete()
+      .eq('user_id', user.id)
+      .eq('retweet_of_id', tweetId)
+      .eq('content', '')
+      .is('reply_to_id', null)
   } else {
     const { error } = await supabase.from('tweets').insert({
       user_id: user.id,

@@ -1,13 +1,15 @@
 import { createClient } from '@/lib/supabase/server'
 
-const TWEET_SELECT = `
+export const TWEET_SELECT = `
   id,
   content,
   created_at,
+  edited_at,
   user_id,
   reply_to_id,
   retweet_of_id,
   image_url,
+  link_status,
   profiles!tweets_user_id_fkey (
     username,
     display_name,
@@ -15,45 +17,80 @@ const TWEET_SELECT = `
   ),
   likes (count),
   replies:tweets!reply_to_id (count),
-  retweets:tweets!retweet_of_id (count),
-  original:tweets!retweet_of_id (
-    id,
-    content,
-    created_at,
-    user_id,
-    image_url,
-    profiles!tweets_user_id_fkey (
-      username,
-      display_name,
-      avatar_url
-    )
-  )
+  retweets:tweets!retweet_of_id (count)
 `
+
+const ORIGINAL_SELECT = `
+  id,
+  content,
+  created_at,
+  edited_at,
+  user_id,
+  image_url,
+  profiles!user_id (
+    username,
+    display_name,
+    avatar_url
+  ),
+  likes (count),
+  replies:tweets!reply_to_id (count),
+  retweets:tweets!retweet_of_id (count)
+`
+
+export async function attachOriginals(tweets: any[]) {
+  const supabase = await createClient()
+  const retweetIds = tweets
+    .filter((t) => t.retweet_of_id)
+    .map((t) => t.retweet_of_id)
+
+  if (retweetIds.length === 0) return tweets
+
+  const { data: originals } = await supabase
+    .from('tweets')
+    .select(ORIGINAL_SELECT)
+    .in('id', retweetIds)
+
+  const originalsById = new Map(originals?.map((t) => [t.id, t]) ?? [])
+
+  return tweets.map((t) => ({
+    ...t,
+    original: t.retweet_of_id ? (originalsById.get(t.retweet_of_id) ?? null) : null,
+  }))
+}
 
 export async function attachLikedBy(tweets: any[], userId: string) {
   if (tweets.length === 0) return tweets
   const supabase = await createClient()
 
   const tweetIds = tweets.map((t) => t.id)
+  const originalIds = tweets.filter((t) => t.original).map((t) => t.original.id)
+  const allIds = [...new Set([...tweetIds, ...originalIds])]
 
   const [likedRes, bookmarkedRes, retweetedRes] = await Promise.all([
-    supabase.from('likes').select('tweet_id').eq('user_id', userId).in('tweet_id', tweetIds),
-    supabase.from('bookmarks').select('tweet_id').eq('user_id', userId).in('tweet_id', tweetIds),
-    supabase.from('tweets').select('retweet_of_id').eq('user_id', userId).in('retweet_of_id', tweetIds).is('reply_to_id', null),
+    supabase.from('likes').select('tweet_id').eq('user_id', userId).in('tweet_id', allIds),
+    supabase.from('bookmarks').select('tweet_id').eq('user_id', userId).in('tweet_id', allIds),
+    supabase.from('tweets').select('retweet_of_id').eq('user_id', userId).in('retweet_of_id', allIds).is('reply_to_id', null),
   ])
 
   const likedSet = new Set(likedRes.data?.map((l) => l.tweet_id) ?? [])
   const bookmarkedSet = new Set(bookmarkedRes.data?.map((b) => b.tweet_id) ?? [])
   const retweetedSet = new Set(retweetedRes.data?.map((r) => r.retweet_of_id) ?? [])
 
+  function annotate(t: any) {
+    return {
+      ...t,
+      like_count: t.likes?.[0]?.count ?? 0,
+      liked_by_me: likedSet.has(t.id),
+      reply_count: t.replies?.[0]?.count ?? 0,
+      retweet_count: t.retweets?.[0]?.count ?? 0,
+      retweeted_by_me: retweetedSet.has(t.id),
+      bookmarked_by_me: bookmarkedSet.has(t.id),
+    }
+  }
+
   return tweets.map((t) => ({
-    ...t,
-    like_count: t.likes?.[0]?.count ?? 0,
-    liked_by_me: likedSet.has(t.id),
-    reply_count: t.replies?.[0]?.count ?? 0,
-    retweet_count: t.retweets?.[0]?.count ?? 0,
-    retweeted_by_me: retweetedSet.has(t.id),
-    bookmarked_by_me: bookmarkedSet.has(t.id),
+    ...annotate(t),
+    original: t.original ? annotate(t.original) : t.original,
   }))
 }
 
@@ -103,7 +140,8 @@ export async function getFeedTweets(userId: string) {
 
   if (error) throw new Error(error.message)
   const filtered = filterMutedWords(data ?? [], mutedWordList)
-  return attachLikedBy(filtered, userId)
+  const withOriginals = await attachOriginals(filtered)
+  return attachLikedBy(withOriginals, userId)
 }
 
 export async function getAllTweets(userId?: string) {
@@ -126,8 +164,9 @@ export async function getAllTweets(userId?: string) {
   const { data, error } = await query
   if (error) throw new Error(error.message)
   const filtered = filterMutedWords(data ?? [], mutedWordList)
-  if (!userId) return filtered
-  return attachLikedBy(filtered, userId)
+  const withOriginals = await attachOriginals(filtered)
+  if (!userId) return withOriginals
+  return attachLikedBy(withOriginals, userId)
 }
 
 export async function getTweetById(tweetId: string, userId?: string) {
@@ -140,9 +179,27 @@ export async function getTweetById(tweetId: string, userId?: string) {
     .single()
 
   if (error) return null
-  if (!userId) return data
-  const [withLikes] = await attachLikedBy([data], userId)
+  const [withOriginal] = await attachOriginals([data])
+  if (!userId) return withOriginal
+  const [withLikes] = await attachLikedBy([withOriginal], userId)
   return withLikes
+}
+
+export async function getTweetsByHashtag(tag: string, userId?: string) {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('tweets')
+    .select(TWEET_SELECT)
+    .ilike('content', `%#${tag}%`)
+    .is('reply_to_id', null)
+    .is('retweet_of_id', null)
+    .order('created_at', { ascending: false })
+    .limit(50)
+
+  if (error) throw new Error(error.message)
+  if (!userId) return data ?? []
+  return attachLikedBy(data ?? [], userId)
 }
 
 export async function getReplies(tweetId: string, userId?: string) {
@@ -167,6 +224,7 @@ export async function getReplies(tweetId: string, userId?: string) {
 
   const { data, error } = await query
   if (error) throw new Error(error.message)
-  if (!userId) return data ?? []
-  return attachLikedBy(data ?? [], userId)
+  const withOriginals = await attachOriginals(data ?? [])
+  if (!userId) return withOriginals
+  return attachLikedBy(withOriginals, userId)
 }
