@@ -18,6 +18,10 @@ const BOT_PROFILES: Record<BotKey, { display_name: string; bio: string }> = {
     display_name: 'Solo Hustle',
     bio: 'Young, self-employed, figuring it out. Freelancing, clients, financial freedom — the real version.',
   },
+  ai_news: {
+    display_name: 'The AI Brief',
+    bio: 'What\'s happening at Anthropic, OpenAI, Google DeepMind, and everywhere else AI is moving fast.',
+  },
 }
 
 export async function POST(request: Request) {

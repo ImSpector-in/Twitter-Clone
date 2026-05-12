@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        bot: [cto_fanatic, ux_critic, buildinpublic]
+        bot: [cto_fanatic, ux_critic, buildinpublic, ai_news]
     steps:
       - name: Post tweet for ${{ matrix.bot }}
         run: |
@@ -28,7 +28,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        bot: [cto_fanatic, ux_critic, buildinpublic]
+        bot: [cto_fanatic, ux_critic, buildinpublic, ai_news]
     steps:
       - name: Reply to a tweet for ${{ matrix.bot }}
         run: |
@@ -44,7 +44,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        bot: [cto_fanatic, ux_critic, buildinpublic]
+        bot: [cto_fanatic, ux_critic, buildinpublic, ai_news]
     steps:
       - name: Respond to notifications for ${{ matrix.bot }}
         run: |
