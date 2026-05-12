@@ -13,6 +13,7 @@ export async function getProfileByUsername(username: string) {
       bio,
       avatar_url,
       is_private,
+      is_admin,
       created_at,
       pinned_tweet_id
     `)

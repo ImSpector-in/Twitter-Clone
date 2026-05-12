@@ -13,7 +13,8 @@ export const TWEET_SELECT = `
   profiles!tweets_user_id_fkey (
     username,
     display_name,
-    avatar_url
+    avatar_url,
+    is_admin
   ),
   likes (count),
   replies:tweets!reply_to_id (count),

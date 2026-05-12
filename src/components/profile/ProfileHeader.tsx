@@ -9,6 +9,7 @@ type Profile = {
   bio: string | null
   avatar_url: string | null
   is_private?: boolean | null
+  is_admin?: boolean | null
 }
 
 type Props = {
@@ -46,8 +47,13 @@ export default function ProfileHeader({ profile, followers, following, isOwnProf
         </div>
 
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-xl font-bold">{displayName}</h1>
+            {profile.is_admin && (
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-primary text-primary-foreground uppercase tracking-wide leading-none">
+                admin
+              </span>
+            )}
             {profile.is_private && <Lock className="h-4 w-4 text-muted-foreground" />}
           </div>
           <p className="text-muted-foreground text-sm">@{profile.username}</p>

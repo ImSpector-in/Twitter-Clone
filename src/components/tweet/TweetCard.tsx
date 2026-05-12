@@ -132,6 +132,11 @@ export default function TweetCard({ tweet, currentUserId, retweetedByUsername, i
             <Link href={`/profile/${username}`} onClick={stopProp} className="font-semibold text-[15px] hover:text-primary transition-colors">
               {displayName}
             </Link>
+            {profile?.is_admin && (
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-primary text-primary-foreground uppercase tracking-wide leading-none">
+                admin
+              </span>
+            )}
             <span className="text-muted-foreground text-xs">·</span>
             <Link href={`/profile/${username}`} onClick={stopProp} className="text-muted-foreground text-xs hover:text-primary transition-colors">
               @{username}

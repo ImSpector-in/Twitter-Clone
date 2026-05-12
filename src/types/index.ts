@@ -17,6 +17,7 @@ export type TweetWithProfile = {
     username: string
     display_name: string | null
     avatar_url: string | null
+    is_admin: boolean | null
   } | null
   link_status: string | null
   original?: {
@@ -37,6 +38,7 @@ export type TweetWithProfile = {
       username: string
       display_name: string | null
       avatar_url: string | null
+      is_admin: boolean | null
     } | null
   } | null
 }
