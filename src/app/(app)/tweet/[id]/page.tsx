@@ -17,8 +17,8 @@ export default async function TweetThreadPage({ params }: Props) {
   const { data: { user } } = await supabase.auth.getUser()
 
   const [tweet, replies] = await Promise.all([
-    getTweetById(id, user!.id),
-    getReplies(id, user!.id),
+    getTweetById(id, user?.id),
+    getReplies(id, user?.id),
   ])
 
   if (!tweet) notFound()
@@ -33,7 +33,7 @@ export default async function TweetThreadPage({ params }: Props) {
       </div>
 
       {/* Original tweet */}
-      <TweetCard tweet={tweet as any} currentUserId={user!.id} />
+      <TweetCard tweet={tweet as any} currentUserId={user?.id ?? ''} />
 
       {/* Reply composer */}
       <div className="border-b px-4 py-2">
@@ -52,7 +52,7 @@ export default async function TweetThreadPage({ params }: Props) {
       ) : (
         <TweetList
           tweets={replies as any}
-          currentUserId={user!.id}
+          currentUserId={user?.id ?? ''}
           emptyMessage="No replies yet."
         />
       )}
