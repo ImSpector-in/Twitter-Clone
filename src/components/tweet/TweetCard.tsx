@@ -5,6 +5,21 @@ import Image from 'next/image'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { formatDistanceToNow } from 'date-fns'
+
+function safeFromNow(dateStr: string | null | undefined, tweetId?: string): string {
+  if (!dateStr) return ''
+  const d = new Date(dateStr)
+  if (isNaN(d.getTime())) {
+    console.error('[TweetCard] Invalid date:', dateStr, 'tweet:', tweetId)
+    return ''
+  }
+  try {
+    return formatDistanceToNow(d, { addSuffix: true })
+  } catch (e) {
+    console.error('[TweetCard] formatDistanceToNow threw:', e, 'date:', dateStr, 'tweet:', tweetId)
+    return ''
+  }
+}
 import { Repeat2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -123,9 +138,7 @@ export default function TweetCard({ tweet, currentUserId, retweetedByUsername, i
             </Link>
             <span className="text-muted-foreground/40 text-xs">·</span>
             <span className="text-muted-foreground text-xs tabular-nums">
-              {displayTweet.created_at
-                ? formatDistanceToNow(new Date(displayTweet.created_at), { addSuffix: true })
-                : ''}
+              {safeFromNow(displayTweet.created_at, displayTweet.id)}
             </span>
             {displayTweet.edited_at && (
               <span className="text-muted-foreground/50 text-xs">(edited)</span>
@@ -206,7 +219,7 @@ export default function TweetCard({ tweet, currentUserId, retweetedByUsername, i
                   <>
                     <span className="text-muted-foreground/40 text-xs">·</span>
                     <span className="text-muted-foreground text-xs">
-                      {formatDistanceToNow(new Date(tweet.original.created_at), { addSuffix: true })}
+                      {safeFromNow(tweet.original.created_at, tweet.original.id)}
                     </span>
                   </>
                 )}

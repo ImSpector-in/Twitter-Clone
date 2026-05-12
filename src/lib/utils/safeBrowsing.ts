@@ -32,7 +32,7 @@ export async function scanUrls(urls: string[]): Promise<'clean' | 'flagged'> {
     console.log('[safeBrowsing] Scanning URLs:', unique)
 
     const res = await fetch(
-      `https://safebrowsingapis.googleapis.com/v4/threatMatches:find?key=${apiKey}`,
+      `https://safebrowsing.googleapis.com/v4/threatMatches:find?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -52,7 +52,10 @@ export async function scanUrls(urls: string[]): Promise<'clean' | 'flagged'> {
     const data = await res.json()
     console.log('[safeBrowsing] Response:', res.status, JSON.stringify(data))
 
-    if (!res.ok) return 'clean'
+    if (!res.ok) {
+      console.error('[safeBrowsing] API error:', res.status, JSON.stringify(data))
+      return 'clean'
+    }
     return data.matches?.length ? 'flagged' : 'clean'
   } catch (err) {
     console.error('[safeBrowsing] Error:', err)

@@ -33,7 +33,7 @@ function NewsCard({ item }: { item: NewsItem }) {
         {item.description && (
           <p className="text-xs text-muted-foreground line-clamp-2">{item.description}</p>
         )}
-        {item.pubDate && (
+        {item.pubDate && !isNaN(new Date(item.pubDate).getTime()) && (
           <p className="text-xs text-muted-foreground">
             {new Date(item.pubDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
           </p>
