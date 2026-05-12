@@ -20,23 +20,6 @@ export const TWEET_SELECT = `
   retweets:tweets!retweet_of_id (count)
 `
 
-const ORIGINAL_SELECT = `
-  id,
-  content,
-  created_at,
-  edited_at,
-  user_id,
-  image_url,
-  profiles!user_id (
-    username,
-    display_name,
-    avatar_url
-  ),
-  likes (count),
-  replies:tweets!reply_to_id (count),
-  retweets:tweets!retweet_of_id (count)
-`
-
 export async function attachOriginals(tweets: any[]) {
   const supabase = await createClient()
   const retweetIds = tweets
@@ -47,7 +30,7 @@ export async function attachOriginals(tweets: any[]) {
 
   const { data: originals } = await supabase
     .from('tweets')
-    .select(ORIGINAL_SELECT)
+    .select(TWEET_SELECT)
     .in('id', retweetIds)
 
   const originalsById = new Map(originals?.map((t) => [t.id, t]) ?? [])
