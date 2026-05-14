@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import PasswordInput from '@/components/ui/password-input'
@@ -14,43 +14,19 @@ function ResetPasswordForm() {
   const [ready, setReady] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
-  const searchParams = useSearchParams()
 
   useEffect(() => {
+    // The auth/callback route handler already exchanged the code and set the session.
+    // We just verify there's an active session before showing the form.
     const supabase = createClient()
-    const code = searchParams.get('code')
-
-    if (code) {
-      // PKCE flow — exchange the code from the email link for a session
-      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
-        if (error) setError('Reset link is invalid or has expired. Please request a new one.')
-        else setReady(true)
-      })
-      return
-    }
-
-    // Implicit / token flow — Supabase client reads the hash fragment (#access_token=...)
-    // and fires PASSWORD_RECOVERY once the session is established
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') setReady(true)
-    })
-
-    // Also catch the case where the session was already established (e.g. page refresh)
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) setReady(true)
+      if (session) {
+        setReady(true)
+      } else {
+        setError('Reset link is invalid or has expired. Please request a new one.')
+      }
     })
-
-    // Fallback: if nothing fires within 4 seconds, the link is invalid
-    const timeout = setTimeout(async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) setError('Reset link is invalid or has expired. Please request a new one.')
-    }, 4000)
-
-    return () => {
-      subscription.unsubscribe()
-      clearTimeout(timeout)
-    }
-  }, [searchParams])
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
