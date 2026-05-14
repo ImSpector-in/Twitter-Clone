@@ -3,6 +3,9 @@ export type NewsItem = {
   link: string
   description: string
   pubDate: string
+  score?: number
+  commentCount?: number
+  commentsLink?: string
 }
 
 function parseRSS(xml: string): NewsItem[] {
@@ -18,10 +21,28 @@ function parseRSS(xml: string): NewsItem[] {
     const rawLink = get('link') || item.match(/<link>([\s\S]*?)<\/link>/)?.[1]?.trim() || ''
     // Q-028: Only allow http/https links from RSS feeds to prevent javascript: injection
     const link = /^https?:\/\//i.test(rawLink) ? rawLink : ''
-    const description = get('description').replace(/<[^>]+>/g, '').slice(0, 160)
+
+    const rawDesc = get('description')
+
+    // Extract HN-style points and comment count if present (hnrss.org format)
+    const scoreMatch = rawDesc.match(/Points:\s*(\d+)/)
+    const score = scoreMatch ? parseInt(scoreMatch[1]) : undefined
+    const commentsMatch = rawDesc.match(/Comments:\s*(\d+)/)
+    const commentCount = commentsMatch ? parseInt(commentsMatch[1]) : undefined
+
+    // Strip HTML tags and the HN metadata line from description
+    const description = rawDesc
+      .replace(/<[^>]+>/g, '')
+      .replace(/Points:\s*\d+\s*\|\s*Comments:\s*\d+/gi, '')
+      .trim()
+      .slice(0, 160)
+
     const pubDate = get('pubDate')
 
-    if (title && link) items.push({ title, link, description, pubDate })
+    const rawComments = get('comments')
+    const commentsLink = /^https?:\/\//i.test(rawComments) ? rawComments : undefined
+
+    if (title && link) items.push({ title, link, description, pubDate, score, commentCount, commentsLink })
   }
 
   return items
