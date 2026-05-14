@@ -1,12 +1,25 @@
 import Link from 'next/link'
 import { ShieldAlert } from 'lucide-react'
 
-const TOKEN_REGEX = /(https?:\/\/[^\s<>"']+|#\w+)/g
+const TOKEN_REGEX = /(https?:\/\/[^\s<>"']+|#\w+|@\w+)/g
 
 export function renderWithHashtags(content: string, linkStatus?: string | null) {
   const parts = content.split(TOKEN_REGEX)
 
   return parts.map((part, i) => {
+    if (part.startsWith('@')) {
+      return (
+        <Link
+          key={i}
+          href={`/profile/${part.slice(1).toLowerCase()}`}
+          className="text-primary hover:underline"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {part}
+        </Link>
+      )
+    }
+
     if (part.startsWith('#')) {
       return (
         <Link
