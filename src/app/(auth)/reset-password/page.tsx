@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import type { EmailOtpType } from '@supabase/supabase-js'
 import { Button } from '@/components/ui/button'
 import PasswordInput from '@/components/ui/password-input'
 import QuotoraLogo from '@/components/ui/QuotoraLogo'
@@ -31,14 +32,22 @@ function ResetPasswordForm() {
       else setError('Reset link is invalid or has expired. Please request a new one.')
     }
 
-    // Fallback: direct code in URL (legacy / direct link scenario)
+    // token_hash flow — Supabase email template sends ?token_hash=...&type=recovery
+    const token_hash = searchParams.get('token_hash')
+    const type = searchParams.get('type') as EmailOtpType | null
+    if (token_hash && type) {
+      supabase.auth.verifyOtp({ token_hash, type }).then(({ error }) => settle(!error))
+      return
+    }
+
+    // PKCE code flow — either direct in URL or after server-side /auth/callback exchange
     const code = searchParams.get('code')
     if (code) {
       supabase.auth.exchangeCodeForSession(code).then(({ error }) => settle(!error))
       return
     }
 
-    // Primary path: session was set server-side by /auth/callback — just check it exists
+    // Session already set server-side by /auth/callback — just check it exists
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (settled) return
       if (session) { settle(true); return }
