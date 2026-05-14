@@ -5,6 +5,7 @@ import { attachLikedBy, attachOriginals, getTweetById } from '@/lib/queries/twee
 import ProfileHeader from '@/components/profile/ProfileHeader'
 import FollowButton from '@/components/profile/FollowButton'
 import BlockMuteButtons from '@/components/profile/BlockMuteButtons'
+import MessageButton from '@/components/messages/MessageButton'
 import TweetCard from '@/components/tweet/TweetCard'
 import TweetList from '@/components/tweet/TweetList'
 import { Lock, Pin } from 'lucide-react'
@@ -30,6 +31,13 @@ export default async function ProfilePage({ params }: Props) {
   ])
 
   const isOwnProfile = user?.id === profile.id
+
+  const BOT_IDS = [
+    process.env.BOT_CTO_FANATIC_ID,
+    process.env.BOT_UX_CRITIC_ID,
+    process.env.BOT_BUILDINPUBLIC_ID,
+  ].filter(Boolean) as string[]
+  const isBot = BOT_IDS.includes(profile.id)
   const isFollowing = !!followCheck.data
   const isBlocked = !!blockCheck.data
   const isMuted = !!muteCheck.data
@@ -58,6 +66,7 @@ export default async function ProfilePage({ params }: Props) {
         following={counts.following}
         isOwnProfile={isOwnProfile}
         canViewFollows={canViewFollows}
+        messageButton={!isOwnProfile && !isBot ? <MessageButton targetUserId={profile.id} /> : undefined}
         followButton={
           !isOwnProfile ? (
             <div className="flex items-center gap-2">

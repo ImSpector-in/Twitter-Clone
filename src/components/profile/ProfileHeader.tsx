@@ -18,10 +18,11 @@ type Props = {
   following: number
   isOwnProfile: boolean
   followButton?: React.ReactNode
+  messageButton?: React.ReactNode
   canViewFollows: boolean
 }
 
-export default function ProfileHeader({ profile, followers, following, isOwnProfile, followButton, canViewFollows }: Props) {
+export default function ProfileHeader({ profile, followers, following, isOwnProfile, followButton, messageButton, canViewFollows }: Props) {
   const displayName = profile.display_name || profile.username
   const initials = displayName.slice(0, 2).toUpperCase()
 
@@ -43,7 +44,12 @@ export default function ProfileHeader({ profile, followers, following, isOwnProf
             >
               Edit profile
             </a>
-          ) : followButton}
+          ) : (
+            <div className="flex items-center gap-2">
+              {messageButton}
+              {followButton}
+            </div>
+          )}
         </div>
 
         <div>

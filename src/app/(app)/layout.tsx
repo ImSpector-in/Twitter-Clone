@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { getUnreadCount } from '@/lib/queries/notifications'
+import { getUnreadDmCount } from '@/lib/queries/messages'
 import TopNav from '@/components/nav/TopNav'
 import Sidebar from '@/components/nav/Sidebar'
 import BottomNav from '@/components/nav/BottomNav'
@@ -24,7 +25,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const username = profile?.username ?? 'unknown'
   const displayName = profile?.display_name || profile?.username || 'User'
   const avatarUrl = profile?.avatar_url ?? null
-  const unreadCount = await getUnreadCount(user.id)
+  const [unreadCount, unreadDmCount] = await Promise.all([
+    getUnreadCount(user.id),
+    getUnreadDmCount(user.id),
+  ])
 
   return (
     <div className="min-h-screen bg-background">
@@ -37,7 +41,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         {/* Left sidebar */}
         <aside className="hidden md:block w-56 shrink-0">
           <div className="sticky top-20">
-            <Sidebar username={username} unreadCount={unreadCount} />
+            <Sidebar username={username} unreadCount={unreadCount} unreadDmCount={unreadDmCount} />
           </div>
         </aside>
 
