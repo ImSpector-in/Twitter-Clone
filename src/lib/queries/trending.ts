@@ -7,6 +7,18 @@ export type NewsItem = {
   commentsLink?: string
 }
 
+function decodeEntities(str: string): string {
+  return str
+    .replace(/&#x([0-9a-fA-F]+);/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(parseInt(dec, 10)))
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+}
+
 function parseRSS(xml: string): NewsItem[] {
   const items: NewsItem[] = []
   const itemMatches = xml.match(/<item>([\s\S]*?)<\/item>/g) ?? []
@@ -16,7 +28,7 @@ function parseRSS(xml: string): NewsItem[] {
       const match = item.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`))
       return match ? match[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').trim() : ''
     }
-    const title = get('title')
+    const title = decodeEntities(get('title'))
     const rawLink = get('link') || item.match(/<link>([\s\S]*?)<\/link>/)?.[1]?.trim() || ''
     // Q-028: Only allow http/https links from RSS feeds to prevent javascript: injection
     const link = /^https?:\/\//i.test(rawLink) ? rawLink : ''
@@ -28,11 +40,12 @@ function parseRSS(xml: string): NewsItem[] {
     const commentCount = commentsMatch ? parseInt(commentsMatch[1]) : undefined
 
     // Strip HTML tags and the HN metadata line from description
-    const description = rawDesc
-      .replace(/<[^>]+>/g, '')
-      .replace(/Points:\s*\d+\s*\|\s*Comments:\s*\d+/gi, '')
-      .trim()
-      .slice(0, 160)
+    const description = decodeEntities(
+      rawDesc
+        .replace(/<[^>]+>/g, '')
+        .replace(/Points:\s*\d+\s*\|\s*Comments:\s*\d+/gi, '')
+        .trim()
+    ).slice(0, 160)
 
     const pubDate = get('pubDate')
 
