@@ -75,14 +75,14 @@ export async function createTweet(content: string, replyToId?: string, imageUrl?
   if (replyToId) {
     const { data: parentTweet } = await supabase
       .from('tweets')
-      .select('user_id, profiles!tweets_user_id_fkey (reply_scope)')
+      .select('user_id, reply_scope')
       .eq('id', replyToId)
       .single()
 
     if (!parentTweet) throw new Error('Tweet not found')
 
     const authorId = parentTweet.user_id
-    const replyScope = (parentTweet.profiles as any)?.reply_scope ?? 'everyone'
+    const replyScope = parentTweet.reply_scope ?? 'everyone'
 
     if (replyScope === 'nobody') throw new Error('Replies are disabled on this tweet')
 
