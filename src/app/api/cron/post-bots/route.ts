@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { generateTweet, generateTweetWithLink, generateNewsTweet } from '@/lib/bots/gemini'
 import { BOTS, type BotKey } from '@/lib/bots/personas'
-import { fetchAndUploadBotImage } from '@/lib/bots/images'
 import { fetchLatestAINews } from '@/lib/bots/news'
 
 export const dynamic = 'force-dynamic'
@@ -46,15 +45,10 @@ export async function POST(request: Request) {
     const commentary = await generateNewsTweet(persona.systemPrompt, article.title, article.description)
     const content = `${commentary} ${article.link}`.trim().slice(0, 280)
 
-    // 70% chance of image for news bot
-    const imageUrl = Math.random() < 0.7
-      ? await fetchAndUploadBotImage(persona.imageKeywords)
-      : null
-
     const { error } = await supabase.from('tweets').insert({
       user_id: userId,
       content,
-      image_url: imageUrl,
+      image_url: null,
       link_status: 'clean',
     })
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -79,19 +73,14 @@ export async function POST(request: Request) {
     ? `${rawContent} ${chosenLink.url}`.trim().slice(0, 280)
     : rawContent
 
-  // 70% chance of attaching a relevant image
-  const imageUrl = Math.random() < 0.7
-    ? await fetchAndUploadBotImage(persona.imageKeywords)
-    : null
-
   const { error } = await supabase.from('tweets').insert({
     user_id: userId,
     content,
-    image_url: imageUrl,
+    image_url: null,
     link_status: chosenLink ? 'clean' : null,
   })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  return NextResponse.json({ ok: true, bot, topic, content, hasImage: !!imageUrl, hasLink: !!chosenLink })
+  return NextResponse.json({ ok: true, bot, topic, content, hasLink: !!chosenLink })
 }
