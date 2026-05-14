@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import Link from 'next/link'
+import QuotoraLogo from '@/components/ui/QuotoraLogo'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
@@ -34,7 +35,7 @@ export default function ForgotPasswordPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="w-full max-w-sm space-y-6 p-8 text-center">
-          <h1 className="text-3xl font-bold">𝕏</h1>
+          <div className="flex justify-center"><QuotoraLogo size={48} /></div>
           <h2 className="text-xl font-semibold">Check your email</h2>
           <p className="text-muted-foreground text-sm">
             We sent a password reset link to <strong>{email}</strong>.
@@ -51,7 +52,7 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="w-full max-w-sm space-y-6 p-8">
         <div className="text-center space-y-1">
-          <h1 className="text-3xl font-bold">𝕏</h1>
+          <div className="flex justify-center"><QuotoraLogo size={48} /></div>
           <h2 className="text-xl font-semibold">Reset your password</h2>
           <p className="text-muted-foreground text-sm">Enter your email and we'll send you a reset link.</p>
         </div>

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import PasswordInput from '@/components/ui/password-input'
+import QuotoraLogo from '@/components/ui/QuotoraLogo'
 
 function ResetPasswordForm() {
   const [password, setPassword] = useState('')
@@ -16,32 +17,45 @@ function ResetPasswordForm() {
   const searchParams = useSearchParams()
 
   useEffect(() => {
-    // Exchange the code from the email link for a session
+    const supabase = createClient()
     const code = searchParams.get('code')
+
     if (code) {
-      const supabase = createClient()
+      // PKCE flow — exchange the code from the email link for a session
       supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
-        if (error) {
-          setError('Reset link is invalid or has expired. Please request a new one.')
-        } else {
-          setReady(true)
-        }
+        if (error) setError('Reset link is invalid or has expired. Please request a new one.')
+        else setReady(true)
       })
-    } else {
-      setReady(true)
+      return
+    }
+
+    // Implicit / token flow — Supabase client reads the hash fragment (#access_token=...)
+    // and fires PASSWORD_RECOVERY once the session is established
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') setReady(true)
+    })
+
+    // Also catch the case where the session was already established (e.g. page refresh)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) setReady(true)
+    })
+
+    // Fallback: if nothing fires within 4 seconds, the link is invalid
+    const timeout = setTimeout(async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) setError('Reset link is invalid or has expired. Please request a new one.')
+    }, 4000)
+
+    return () => {
+      subscription.unsubscribe()
+      clearTimeout(timeout)
     }
   }, [searchParams])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (password !== confirm) {
-      setError('Passwords do not match')
-      return
-    }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters')
-      return
-    }
+    if (password !== confirm) { setError('Passwords do not match'); return }
+    if (password.length < 12) { setError('Password must be at least 12 characters'); return }
 
     setLoading(true)
     setError('')
@@ -49,16 +63,14 @@ function ResetPasswordForm() {
     const supabase = createClient()
     const { error } = await supabase.auth.updateUser({ password })
 
-    if (error) {
-      setError(error.message)
-    } else {
-      router.push('/home')
-    }
+    if (error) setError(error.message)
+    else router.push('/home')
+
     setLoading(false)
   }
 
   if (!ready && !error) {
-    return <p className="text-center text-muted-foreground text-sm">Verifying reset link...</p>
+    return <p className="text-center text-muted-foreground text-sm">Verifying reset link…</p>
   }
 
   if (error && !ready) {
@@ -75,10 +87,9 @@ function ResetPasswordForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <PasswordInput
-        placeholder="New password (min 6 characters)"
+        placeholder="New password (min 12 characters)"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        minLength={6}
         required
       />
       <PasswordInput
@@ -89,7 +100,7 @@ function ResetPasswordForm() {
       />
       {error && <p className="text-sm text-destructive">{error}</p>}
       <Button type="submit" className="w-full" disabled={loading}>
-        {loading ? 'Updating...' : 'Update password'}
+        {loading ? 'Updating…' : 'Update password'}
       </Button>
     </form>
   )
@@ -99,11 +110,13 @@ export default function ResetPasswordPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="w-full max-w-sm space-y-6 p-8">
-        <div className="text-center space-y-1">
-          <h1 className="text-3xl font-bold">𝕏</h1>
+        <div className="text-center space-y-2">
+          <div className="flex justify-center">
+            <QuotoraLogo size={48} />
+          </div>
           <h2 className="text-xl font-semibold">Set new password</h2>
         </div>
-        <Suspense fallback={<p className="text-center text-muted-foreground text-sm">Loading...</p>}>
+        <Suspense fallback={<p className="text-center text-muted-foreground text-sm">Loading…</p>}>
           <ResetPasswordForm />
         </Suspense>
       </div>
