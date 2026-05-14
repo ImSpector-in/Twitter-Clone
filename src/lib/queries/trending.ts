@@ -3,7 +3,6 @@ export type NewsItem = {
   link: string
   description: string
   pubDate: string
-  score?: number
   commentCount?: number
   commentsLink?: string
 }
@@ -24,9 +23,7 @@ function parseRSS(xml: string): NewsItem[] {
 
     const rawDesc = get('description')
 
-    // Extract HN-style points and comment count if present (hnrss.org format)
-    const scoreMatch = rawDesc.match(/Points:\s*(\d+)/)
-    const score = scoreMatch ? parseInt(scoreMatch[1]) : undefined
+    // Extract HN comment count if present (hnrss.org format)
     const commentsMatch = rawDesc.match(/Comments:\s*(\d+)/)
     const commentCount = commentsMatch ? parseInt(commentsMatch[1]) : undefined
 
@@ -42,7 +39,7 @@ function parseRSS(xml: string): NewsItem[] {
     const rawComments = get('comments')
     const commentsLink = /^https?:\/\//i.test(rawComments) ? rawComments : undefined
 
-    if (title && link) items.push({ title, link, description, pubDate, score, commentCount, commentsLink })
+    if (title && link) items.push({ title, link, description, pubDate, commentCount, commentsLink })
   }
 
   return items

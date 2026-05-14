@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ArrowUp, ArrowDown, MessageSquare, Repeat2, Share2, Bookmark, LayoutGrid, TrendingUp, Sun } from 'lucide-react'
+import { MessageSquare, Repeat2, Share2, Bookmark, LayoutGrid, TrendingUp, Sun } from 'lucide-react'
 import type { NewsItem } from '@/lib/queries/trending'
 
 type Tab = 'hacker' | 'trading' | 'hopecore'
@@ -72,26 +72,13 @@ function formatPubDate(pubDate: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
-function NewsCard({ item, index }: { item: NewsItem; index: number }) {
+function NewsCard({ item }: { item: NewsItem }) {
   const domain = getSourceDomain(item.link)
   const dotColor = getDomainColor(domain)
-  // Use real score if available (HN), otherwise derive a deterministic fallback
-  const score = item.score ?? Math.max(4, 180 - index * 9)
 
   return (
     <div className="bg-card border border-border rounded-2xl p-4 mb-3 hover:border-primary/30 transition-all">
       <div className="flex gap-3">
-        {/* Vote column */}
-        <div className="flex flex-col items-center gap-0.5 shrink-0 w-9 pt-0.5">
-          <button className="text-muted-foreground hover:text-primary transition-colors p-0.5 rounded">
-            <ArrowUp className="h-4 w-4" />
-          </button>
-          <span className="text-sm font-bold tabular-nums leading-none py-0.5">{score}</span>
-          <button className="text-muted-foreground hover:text-muted-foreground/50 transition-colors p-0.5 rounded">
-            <ArrowDown className="h-4 w-4" />
-          </button>
-        </div>
-
         {/* Content */}
         <div className="flex-1 min-w-0 space-y-1.5">
           {/* Source + timestamp */}
@@ -200,7 +187,7 @@ export default function NewsTabs({ hackerNews, tradingNews, hopecoreNews }: Prop
           Could not load news right now. Try again later.
         </div>
       ) : (
-        items.map((item, i) => <NewsCard key={i} item={item} index={i} />)
+        items.map((item, i) => <NewsCard key={i} item={item} />)
       )}
     </div>
   )
