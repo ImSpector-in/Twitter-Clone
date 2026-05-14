@@ -19,36 +19,49 @@ function ResetPasswordForm() {
   useEffect(() => {
     const supabase = createClient()
     let settled = false
+    let subRef: { unsubscribe: () => void } | null = null
+    let timer: ReturnType<typeof setTimeout> | null = null
 
     function settle(ok: boolean) {
       if (settled) return
       settled = true
+      subRef?.unsubscribe()
+      if (timer) clearTimeout(timer)
       if (ok) setReady(true)
       else setError('Reset link is invalid or has expired. Please request a new one.')
     }
 
+    // Fallback: direct code in URL (legacy / direct link scenario)
     const code = searchParams.get('code')
     if (code) {
-      // PKCE flow — exchange the code immediately
-      supabase.auth.exchangeCodeForSession(code)
-        .then(({ error }) => settle(!error))
+      supabase.auth.exchangeCodeForSession(code).then(({ error }) => settle(!error))
       return
     }
 
-    // Implicit flow — Supabase detects the #access_token hash and fires PASSWORD_RECOVERY.
-    // Never call settle(true) until that event arrives; never call settle(false) on
-    // INITIAL_SESSION alone because the hash may not be processed yet.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY') settle(true)
-      else if (event === 'SIGNED_IN' && session) settle(true)
+    // Primary path: session was set server-side by /auth/callback — just check it exists
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (settled) return
+      if (session) { settle(true); return }
+
+      // Implicit flow — hash fragment (#access_token=...&type=recovery) in the URL
+      if (typeof window !== 'undefined' && window.location.hash.includes('access_token')) {
+        const { data } = supabase.auth.onAuthStateChange((event, sess) => {
+          if (event === 'PASSWORD_RECOVERY') settle(true)
+          else if (event === 'SIGNED_IN' && sess) settle(true)
+        })
+        subRef = data.subscription
+        timer = setTimeout(() => settle(false), 6000)
+        return
+      }
+
+      // No session, no code, no hash — link is invalid
+      settle(false)
     })
 
-    // Hard fallback — if nothing fires within 6 seconds the link is genuinely invalid
-    const timeout = setTimeout(() => settle(false), 6000)
-
     return () => {
-      subscription.unsubscribe()
-      clearTimeout(timeout)
+      settled = true
+      subRef?.unsubscribe()
+      if (timer) clearTimeout(timer)
     }
   }, [searchParams])
 

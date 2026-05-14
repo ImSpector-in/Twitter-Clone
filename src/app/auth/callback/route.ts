@@ -4,9 +4,24 @@ import { createClient } from '@/lib/supabase/server'
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
+
+  // Validate next param before the code exchange so we can use it for error redirects
+  const rawNext = searchParams.get('next') ?? '/home'
+  const safe = rawNext.startsWith('/') && !rawNext.startsWith('//') && !rawNext.startsWith('/\\')
+    ? rawNext
+    : '/home'
+
   if (code) {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.exchangeCodeForSession(code)
+    const { data: { user }, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+
+    if (exchangeError) {
+      // Exchange failed (expired link, wrong device, etc.) — send recovery flow back to request a new link
+      if (safe === '/reset-password') {
+        return NextResponse.redirect(`${origin}/forgot-password`)
+      }
+      return NextResponse.redirect(`${origin}/login`)
+    }
 
     if (user) {
       const { data: profile } = await supabase
@@ -21,12 +36,6 @@ export async function GET(request: Request) {
       }
     }
   }
-
-  // Validate next param — must be a relative path, no protocol-relative tricks
-  const rawNext = searchParams.get('next') ?? '/home'
-  const safe = rawNext.startsWith('/') && !rawNext.startsWith('//') && !rawNext.startsWith('/\\')
-    ? rawNext
-    : '/home'
 
   return NextResponse.redirect(`${origin}${safe}`)
 }
