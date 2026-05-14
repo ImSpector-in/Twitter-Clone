@@ -46,8 +46,8 @@ export async function POST(request: Request) {
     const commentary = await generateNewsTweet(persona.systemPrompt, article.title, article.description)
     const content = `${commentary} ${article.link}`.trim().slice(0, 280)
 
-    // 50% chance of image for news bot
-    const imageUrl = Math.random() < 0.5
+    // 70% chance of image for news bot
+    const imageUrl = Math.random() < 0.7
       ? await fetchAndUploadBotImage(persona.imageKeywords)
       : null
 
@@ -79,8 +79,8 @@ export async function POST(request: Request) {
     ? `${rawContent} ${chosenLink.url}`.trim().slice(0, 280)
     : rawContent
 
-  // 40% chance of attaching a relevant image
-  const imageUrl = Math.random() < 0.4
+  // 70% chance of attaching a relevant image
+  const imageUrl = Math.random() < 0.7
     ? await fetchAndUploadBotImage(persona.imageKeywords)
     : null
 
