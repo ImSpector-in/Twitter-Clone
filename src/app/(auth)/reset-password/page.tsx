@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import PasswordInput from '@/components/ui/password-input'
@@ -14,19 +14,43 @@ function ResetPasswordForm() {
   const [ready, setReady] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   useEffect(() => {
-    // The auth/callback route handler already exchanged the code and set the session.
-    // We just verify there's an active session before showing the form.
     const supabase = createClient()
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setReady(true)
-      } else {
-        setError('Reset link is invalid or has expired. Please request a new one.')
-      }
+    let settled = false
+
+    function settle(ok: boolean) {
+      if (settled) return
+      settled = true
+      if (ok) setReady(true)
+      else setError('Reset link is invalid or has expired. Please request a new one.')
+    }
+
+    const code = searchParams.get('code')
+    if (code) {
+      // PKCE flow — exchange the code immediately
+      supabase.auth.exchangeCodeForSession(code)
+        .then(({ error }) => settle(!error))
+      return
+    }
+
+    // Implicit flow — Supabase detects the #access_token hash and fires PASSWORD_RECOVERY.
+    // Never call settle(true) until that event arrives; never call settle(false) on
+    // INITIAL_SESSION alone because the hash may not be processed yet.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') settle(true)
+      else if (event === 'SIGNED_IN' && session) settle(true)
     })
-  }, [])
+
+    // Hard fallback — if nothing fires within 6 seconds the link is genuinely invalid
+    const timeout = setTimeout(() => settle(false), 6000)
+
+    return () => {
+      subscription.unsubscribe()
+      clearTimeout(timeout)
+    }
+  }, [searchParams])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -35,13 +59,10 @@ function ResetPasswordForm() {
 
     setLoading(true)
     setError('')
-
     const supabase = createClient()
     const { error } = await supabase.auth.updateUser({ password })
-
     if (error) setError(error.message)
     else router.push('/home')
-
     setLoading(false)
   }
 

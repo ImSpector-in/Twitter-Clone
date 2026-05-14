@@ -4,16 +4,9 @@ import { createClient } from '@/lib/supabase/server'
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const type = searchParams.get('type')
-
   if (code) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.exchangeCodeForSession(code)
-
-    // Password recovery — go straight to reset page, session is now established
-    if (type === 'recovery') {
-      return NextResponse.redirect(`${origin}/reset-password`)
-    }
 
     if (user) {
       const { data: profile } = await supabase
