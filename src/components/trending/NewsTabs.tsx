@@ -176,7 +176,7 @@ export default function NewsTabs({ hackerNews, tradingNews, hopecoreNews }: Prop
             }`}
           >
             <Icon className="h-4 w-4" />
-            <span className="hidden sm:inline">{label}</span>
+            <span className="text-xs sm:text-sm">{label}</span>
           </button>
         ))}
       </div>
