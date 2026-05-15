@@ -33,15 +33,13 @@ export default function LoginPage() {
         <div className="bg-white rounded-3xl shadow-xl p-8 space-y-4">
           <LoginForm />
           <SocialAuthButtons />
+          <p className="text-center text-sm text-gray-500">
+            Don&apos;t have an account?{' '}
+            <Link href="/signup" className="text-orange-500 font-semibold hover:text-orange-600 transition-colors">
+              Sign up
+            </Link>
+          </p>
         </div>
-
-        {/* Sign up link — outside card */}
-        <p className="text-center text-sm text-gray-500">
-          Don&apos;t have an account?{' '}
-          <Link href="/signup" className="text-orange-500 font-semibold hover:text-orange-600 transition-colors">
-            Sign up
-          </Link>
-        </p>
       </div>
     </div>
   )
