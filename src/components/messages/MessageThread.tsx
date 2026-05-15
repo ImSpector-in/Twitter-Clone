@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { markConversationRead, deleteMessage } from '@/lib/actions/messages'
 import MessageInput from './MessageInput'
@@ -41,11 +42,17 @@ export default function MessageThread({
 }: Props) {
   const [messages, setMessages] = useState<DisplayMessage[]>(initialMessages)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const router = useRouter()
 
-  // Mark conversation as read on mount
+  const markRead = useCallback(async () => {
+    await markConversationRead(conversationId)
+    router.refresh()
+  }, [conversationId, router])
+
+  // Mark as read on mount — also refreshes server layout so the badge clears
   useEffect(() => {
-    markConversationRead(conversationId)
-  }, [conversationId])
+    markRead()
+  }, [markRead])
 
   // Auto-scroll to bottom whenever messages change
   useEffect(() => {
@@ -108,7 +115,7 @@ export default function MessageThread({
           })
 
           // Mark as read when other person sends something
-          if (!isMe) markConversationRead(conversationId)
+          if (!isMe) markRead()
         }
       )
       .subscribe()
