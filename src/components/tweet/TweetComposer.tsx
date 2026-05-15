@@ -171,7 +171,7 @@ export default function TweetComposer({ onSuccess, replyToId, placeholder = "Wha
           disabled={loading || imageUploading || (!content.trim() && !imageUrl && !gifUrl) || remaining < 0}
           className="rounded-full px-5"
         >
-          {loading ? 'Posting...' : 'Post'}
+          {loading ? (replyToId ? 'Replying...' : 'Posting...') : (replyToId ? 'Reply' : 'Post')}
         </Button>
       </div>
 

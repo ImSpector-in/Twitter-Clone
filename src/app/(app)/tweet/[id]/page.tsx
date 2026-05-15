@@ -36,11 +36,10 @@ export default async function TweetThreadPage({ params }: Props) {
       <TweetCard tweet={tweet as any} currentUserId={user?.id ?? ''} />
 
       {/* Reply composer */}
-      <div className="border-b px-4 py-2">
+      <div className="border-b px-4 py-3">
         <TweetComposer
           replyToId={id}
           placeholder="Post your reply..."
-          compact
         />
       </div>
 
