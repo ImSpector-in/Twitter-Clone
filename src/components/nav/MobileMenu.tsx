@@ -51,7 +51,11 @@ export default function MobileMenu({ username, displayName, avatarUrl, unreadCou
                 <QuotoraLogo size={26} />
                 <span className="font-bold">Quotora</span>
               </div>
-              <div className="flex items-center gap-3">
+              <Link
+                href={`/profile/${username}`}
+                onClick={() => onOpenChange(false)}
+                className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+              >
                 <Avatar className="h-10 w-10">
                   <AvatarFallback className="bg-gradient-to-br from-primary to-orange-400 text-white">
                     {initials}
@@ -62,7 +66,7 @@ export default function MobileMenu({ username, displayName, avatarUrl, unreadCou
                   <p className="font-bold text-sm">{displayName}</p>
                   <p className="text-muted-foreground text-xs">@{username}</p>
                 </div>
-              </div>
+              </Link>
             </SheetTitle>
           </SheetHeader>
 
