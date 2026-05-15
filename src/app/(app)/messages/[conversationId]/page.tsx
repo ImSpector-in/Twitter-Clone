@@ -46,9 +46,11 @@ export default async function ConversationPage({ params }: Props) {
   const gradient = getGradient(other.username)
 
   return (
-    <div className="flex flex-col">
+    // Cancel the outer layout's pt-4 / pb-20 padding so this page fills the viewport exactly.
+    // h-[calc(100dvh-3.5rem)] = full dynamic viewport height minus the sticky TopNav (h-14).
+    <div className="-mt-4 -mb-20 md:-mb-4 flex flex-col overflow-hidden h-[calc(100dvh-3.5rem)]">
       {/* Thread header */}
-      <div className="border-b px-4 py-3 flex items-center gap-3 sticky top-16 bg-background z-10">
+      <div className="border-b px-4 py-3 flex items-center gap-3 bg-background z-10 shrink-0">
         <Link href="/messages" className="p-1 rounded-full hover:bg-muted transition-colors shrink-0">
           <ArrowLeft className="h-5 w-5" />
         </Link>
