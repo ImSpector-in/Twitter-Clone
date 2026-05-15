@@ -84,7 +84,7 @@ export default function TopNav({ username, displayName, avatarUrl, onLogoClick }
       </header>
 
       <Dialog open={postOpen} onOpenChange={setPostOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg max-sm:!top-14 max-sm:!translate-y-0">
           <DialogHeader>
             <DialogTitle className="text-primary">New post</DialogTitle>
           </DialogHeader>

@@ -21,7 +21,7 @@ export default function FloatingPostButton() {
         <Feather className="h-6 w-6" />
       </button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg max-sm:!top-14 max-sm:!translate-y-0">
           <DialogHeader>
             <DialogTitle>New post</DialogTitle>
           </DialogHeader>
