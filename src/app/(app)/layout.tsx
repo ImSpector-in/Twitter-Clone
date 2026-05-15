@@ -30,7 +30,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   ])
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-dvh bg-background">
       {/* Top navigation bar + mobile drawer (shared state in controller) */}
       <MobileNavController
         username={username}
