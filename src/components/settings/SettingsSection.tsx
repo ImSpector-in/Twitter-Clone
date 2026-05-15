@@ -1,3 +1,6 @@
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
+
 export function SettingsPage({ title, description, children }: {
   title: string
   description?: string
@@ -5,9 +8,14 @@ export function SettingsPage({ title, description, children }: {
 }) {
   return (
     <div>
-      <div className="border-b px-6 py-4">
-        <h2 className="text-xl font-bold">{title}</h2>
-        {description && <p className="text-muted-foreground text-sm mt-0.5">{description}</p>}
+      <div className="border-b px-6 py-4 flex items-center gap-3">
+        <Link href="/home" className="p-1 rounded-full hover:bg-muted transition-colors sm:hidden shrink-0">
+          <ArrowLeft className="h-5 w-5" />
+        </Link>
+        <div>
+          <h2 className="text-xl font-bold">{title}</h2>
+          {description && <p className="text-muted-foreground text-sm mt-0.5">{description}</p>}
+        </div>
       </div>
       <div className="divide-y">
         {children}

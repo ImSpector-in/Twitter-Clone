@@ -1,3 +1,5 @@
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import EditProfileForm from '@/components/profile/EditProfileForm'
@@ -21,7 +23,10 @@ export default async function EditProfilePage() {
 
   return (
     <div className="max-w-lg mx-auto p-4 space-y-6">
-      <div className="border-b pb-3">
+      <div className="border-b pb-3 flex items-center gap-3">
+        <Link href="/home" className="p-1 rounded-full hover:bg-muted transition-colors">
+          <ArrowLeft className="h-5 w-5" />
+        </Link>
         <h1 className="text-xl font-bold">Edit Profile</h1>
       </div>
       <AvatarUpload

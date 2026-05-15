@@ -1,6 +1,6 @@
 import Link from 'next/link'
+import { ArrowLeft, Lock } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Lock } from 'lucide-react'
 
 type Profile = {
   id: string
@@ -29,7 +29,11 @@ export default function ProfileHeader({ profile, followers, following, isOwnProf
   return (
     <div className="border-b">
       {/* Gradient banner */}
-      <div className="h-28 bg-gradient-to-r from-primary/70 via-cyan-400/50 to-teal-500/30" />
+      <div className="h-28 bg-gradient-to-r from-primary/70 via-cyan-400/50 to-teal-500/30 relative">
+        <Link href="/home" className="absolute top-3 left-3 p-1.5 rounded-full bg-black/30 hover:bg-black/50 transition-colors text-white">
+          <ArrowLeft className="h-5 w-5" />
+        </Link>
+      </div>
 
       <div className="px-4 pb-4 space-y-3 -mt-10">
         <div className="flex items-end justify-between">
