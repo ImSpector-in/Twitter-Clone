@@ -15,11 +15,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'media.tenor.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'c.tenor.com',
+        hostname: '**.giphy.com',
       },
     ],
   },
@@ -38,10 +34,10 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "img-src 'self' https://ujohfqnxtmoraufztjob.supabase.co https://api.dicebear.com https://media.tenor.com https://c.tenor.com data: blob:",
+              "img-src 'self' https://ujohfqnxtmoraufztjob.supabase.co https://api.dicebear.com https://*.giphy.com data: blob:",
               "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
               "style-src 'self' 'unsafe-inline'",
-              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.groq.com https://tenor.googleapis.com",
+              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.groq.com https://api.giphy.com",
               "font-src 'self' data:",
               "frame-ancestors 'none'",
             ].join('; '),

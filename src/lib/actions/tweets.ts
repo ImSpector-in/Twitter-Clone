@@ -15,11 +15,11 @@ function validateImageUrl(url: string | undefined): string | null {
   return url
 }
 
-const TENOR_CDN_PREFIXES = ['https://media.tenor.com/', 'https://c.tenor.com/']
+const GIPHY_CDN_RE = /^https:\/\/media\d*\.giphy\.com\//
 
 function validateGifUrl(url: string | undefined): string | null {
   if (!url) return null
-  if (!TENOR_CDN_PREFIXES.some(p => url.startsWith(p))) throw new Error('Invalid GIF URL')
+  if (!GIPHY_CDN_RE.test(url)) throw new Error('Invalid GIF URL')
   return url
 }
 
