@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { generateTweet, generateTweetWithLink, generateNewsTweet } from '@/lib/bots/gemini'
 import { BOTS, type BotKey } from '@/lib/bots/personas'
 import { fetchLatestAINews } from '@/lib/bots/news'
+import { scanUrls } from '@/lib/utils/safeBrowsing'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -45,11 +46,14 @@ export async function POST(request: Request) {
     const commentary = await generateNewsTweet(persona.systemPrompt, article.title, article.description)
     const content = `${commentary} ${article.link}`.trim().slice(0, 280)
 
+    // Q-036: scan the article link before posting — RSS feeds can be compromised
+    const articleLinkStatus = await scanUrls([article.link])
+
     const { error } = await supabase.from('tweets').insert({
       user_id: userId,
       content,
       image_url: null,
-      link_status: 'clean',
+      link_status: articleLinkStatus,
     })
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 

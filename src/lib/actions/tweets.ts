@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { scanUrls } from '@/lib/utils/safeBrowsing'
 
 const SUPABASE_STORAGE_PREFIX = 'https://ujohfqnxtmoraufztjob.supabase.co/storage/v1/object/public/'
@@ -121,10 +122,11 @@ export async function createTweet(content: string, replyToId?: string, imageUrl?
 
   if (error) throw new Error(error.message)
 
-  // Scan URLs synchronously before returning — runs server-side so API key is available
+  // Scan URLs — use admin client since authenticated users can no longer write link_status (Q-031)
   if (urls.length > 0 && data?.id) {
     const status = await scanUrls(urls)
-    await supabase.from('tweets').update({ link_status: status }).eq('id', data.id)
+    const admin = createAdminClient()
+    await admin.from('tweets').update({ link_status: status }).eq('id', data.id)
   }
 
   revalidatePath('/home')
@@ -137,6 +139,9 @@ export async function updateTweet(tweetId: string, content: string) {
   if (!user) throw new Error('Not authenticated')
 
   const validatedContent = validateContent(content)
+  const urls = extractUrls(validatedContent)
+
+  if (urls.some(hasIpHost)) throw new Error('Links to IP addresses are not allowed.')
 
   const { error } = await supabase
     .from('tweets')
@@ -145,6 +150,15 @@ export async function updateTweet(tweetId: string, content: string) {
     .eq('user_id', user.id)
 
   if (error) throw new Error(error.message)
+
+  // Q-033: re-scan URLs after edit so edited-in malware URLs aren't shown as clean
+  const admin = createAdminClient()
+  if (urls.length > 0) {
+    const status = await scanUrls(urls)
+    await admin.from('tweets').update({ link_status: status }).eq('id', tweetId)
+  } else {
+    await admin.from('tweets').update({ link_status: null }).eq('id', tweetId)
+  }
 
   revalidatePath('/home')
   revalidatePath(`/tweet/${tweetId}`)

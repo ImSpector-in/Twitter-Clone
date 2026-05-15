@@ -1,3 +1,4 @@
+import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getTweetsByHashtag } from '@/lib/queries/tweets'
 import TweetList from '@/components/tweet/TweetList'
@@ -8,7 +9,10 @@ type Props = {
 }
 
 export default async function HashtagPage({ params }: Props) {
-  const { tag } = await params
+  const raw = (await params).tag
+  const tag = raw.replace(/[^\w]/g, '').toLowerCase()
+  if (!tag) notFound()
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 

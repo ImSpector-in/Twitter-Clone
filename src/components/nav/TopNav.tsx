@@ -13,9 +13,10 @@ type Props = {
   username: string
   displayName: string
   avatarUrl: string | null
+  onLogoClick?: () => void
 }
 
-export default function TopNav({ username, displayName, avatarUrl }: Props) {
+export default function TopNav({ username, displayName, avatarUrl, onLogoClick }: Props) {
   const [postOpen, setPostOpen] = useState(false)
   const [search, setSearch] = useState('')
   const router = useRouter()
@@ -32,8 +33,17 @@ export default function TopNav({ username, displayName, avatarUrl }: Props) {
     <>
       <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="max-w-7xl mx-auto px-4 h-14 flex items-center gap-4">
-          {/* Logo */}
-          <Link href="/home" className="flex items-center gap-2 shrink-0">
+          {/* Logo — mobile: taps to open drawer; desktop: navigates home */}
+          {onLogoClick ? (
+            <button
+              onClick={onLogoClick}
+              className="flex items-center gap-2 shrink-0 md:hidden"
+              aria-label="Open menu"
+            >
+              <QuotoraLogo size={34} />
+            </button>
+          ) : null}
+          <Link href="/home" className={`flex items-center gap-2 shrink-0 ${onLogoClick ? 'hidden md:flex' : ''}`}>
             <QuotoraLogo size={34} />
             <span className="font-bold text-lg hidden sm:block tracking-tight">Quotora</span>
           </Link>

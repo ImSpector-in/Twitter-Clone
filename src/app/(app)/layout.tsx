@@ -3,10 +3,9 @@ import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { getUnreadCount } from '@/lib/queries/notifications'
 import { getUnreadDmCount } from '@/lib/queries/messages'
-import TopNav from '@/components/nav/TopNav'
+import MobileNavController from '@/components/nav/MobileNavController'
 import Sidebar from '@/components/nav/Sidebar'
 import BottomNav from '@/components/nav/BottomNav'
-import MobileMenu from '@/components/nav/MobileMenu'
 import FloatingPostButton from '@/components/tweet/FloatingPostButton'
 import TrendingSidebar from '@/components/trending/TrendingSidebar'
 
@@ -32,8 +31,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Top navigation bar */}
-      <TopNav username={username} displayName={displayName} avatarUrl={avatarUrl} />
+      {/* Top navigation bar + mobile drawer (shared state in controller) */}
+      <MobileNavController
+        username={username}
+        displayName={displayName}
+        avatarUrl={avatarUrl}
+        unreadCount={unreadCount}
+        unreadDmCount={unreadDmCount}
+      />
 
       {/* Page body */}
       <div className="max-w-7xl mx-auto px-4 flex gap-6 pt-4 pb-20 md:pb-4">
@@ -63,12 +68,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       {/* Mobile nav */}
       <BottomNav username={username} />
       <FloatingPostButton />
-      <MobileMenu
-        username={username}
-        displayName={displayName}
-        avatarUrl={avatarUrl}
-        unreadCount={unreadCount}
-      />
     </div>
   )
 }

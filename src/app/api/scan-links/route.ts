@@ -8,6 +8,18 @@ const SHORTENER_HOSTS = new Set([
   'buff.ly', 'ift.tt', 'youtu.be', 'short.io', 'rb.gy', 'cutt.ly',
 ])
 
+// Q-030: block SSRF targets that redirect to internal/private addresses
+const PRIVATE_IP_RE = /^(127\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.|fc|fd)/i
+
+function isPrivateHost(urlStr: string): boolean {
+  try {
+    const { hostname } = new URL(urlStr)
+    return hostname === 'localhost' || hostname === '::1' || PRIVATE_IP_RE.test(hostname)
+  } catch {
+    return true
+  }
+}
+
 async function expandUrl(url: string): Promise<string> {
   try {
     const hostname = new URL(url).hostname
@@ -17,7 +29,9 @@ async function expandUrl(url: string): Promise<string> {
       redirect: 'follow',
       signal: AbortSignal.timeout(4000),
     })
-    return res.url
+    const expanded = res.url
+    if (isPrivateHost(expanded)) return url
+    return expanded
   } catch {
     return url
   }
