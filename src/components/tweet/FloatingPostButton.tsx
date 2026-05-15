@@ -1,12 +1,16 @@
 'use client'
 
 import { useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { Feather } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import TweetComposer from './TweetComposer'
 
 export default function FloatingPostButton() {
   const [open, setOpen] = useState(false)
+  const pathname = usePathname()
+
+  if (pathname.startsWith('/messages')) return null
 
   return (
     <>
