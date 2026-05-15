@@ -9,6 +9,8 @@ export const TWEET_SELECT = `
   reply_to_id,
   retweet_of_id,
   image_url,
+  gif_url,
+  reply_scope,
   link_status,
   profiles!tweets_user_id_fkey (
     username,

@@ -248,6 +248,25 @@ export default function TweetCard({ tweet, currentUserId, retweetedByUsername, i
             </div>
           )}
 
+          {/* GIF */}
+          {displayTweet.gif_url && (
+            <div onClick={stopProp}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={displayTweet.gif_url}
+                alt="GIF"
+                className="rounded-xl max-h-80 w-full object-cover cursor-default border border-border/50"
+              />
+            </div>
+          )}
+
+          {/* Reply scope badge */}
+          {displayTweet.reply_scope && displayTweet.reply_scope !== 'everyone' && (
+            <p className="text-xs text-muted-foreground">
+              {displayTweet.reply_scope === 'followers' ? '👥 Followers can reply' : '🚫 Replies turned off'}
+            </p>
+          )}
+
           {/* Action bar — left cluster + bookmark on right like Hivit */}
           <div className="flex items-center justify-between pt-1" onClick={stopProp}>
             {/* Left: reply, retweet, like, share */}

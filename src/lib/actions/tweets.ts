@@ -15,6 +15,16 @@ function validateImageUrl(url: string | undefined): string | null {
   return url
 }
 
+const TENOR_CDN_PREFIXES = ['https://media.tenor.com/', 'https://c.tenor.com/']
+
+function validateGifUrl(url: string | undefined): string | null {
+  if (!url) return null
+  if (!TENOR_CDN_PREFIXES.some(p => url.startsWith(p))) throw new Error('Invalid GIF URL')
+  return url
+}
+
+const VALID_REPLY_SCOPES = ['everyone', 'followers', 'nobody']
+
 function validateContent(content: string): string {
   const trimmed = content?.trim() ?? ''
   if (!trimmed) throw new Error('Tweet cannot be empty')
@@ -35,13 +45,15 @@ function hasIpHost(url: string): boolean {
   }
 }
 
-export async function createTweet(content: string, replyToId?: string, imageUrl?: string): Promise<void> {
+export async function createTweet(content: string, replyToId?: string, imageUrl?: string, replyScope?: string, gifUrl?: string): Promise<void> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
 
   const validatedContent = validateContent(content)
   const validatedImageUrl = validateImageUrl(imageUrl)
+  const validatedGifUrl = validateGifUrl(gifUrl)
+  const validatedScope = VALID_REPLY_SCOPES.includes(replyScope ?? '') ? replyScope : 'everyone'
 
   // Link-specific validations
   const urls = extractUrls(validatedContent)
@@ -115,6 +127,8 @@ export async function createTweet(content: string, replyToId?: string, imageUrl?
       user_id: user.id,
       reply_to_id: replyToId ?? null,
       image_url: validatedImageUrl,
+      gif_url: validatedGifUrl,
+      reply_scope: validatedScope,
       link_status: urls.length > 0 ? 'pending' : null,
     })
     .select('id')

@@ -7,6 +7,9 @@ import { toast } from 'sonner'
 import { createTweet } from '@/lib/actions/tweets'
 import { uploadImage } from '@/lib/uploadImage'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import ReplyScopeButton, { type ReplyScope } from './ReplyScopeButton'
+import EmojiPickerButton from './EmojiPickerButton'
+import GifPickerButton from './GifPickerButton'
 
 type Props = {
   avatarUrl: string | null
@@ -19,6 +22,8 @@ export default function CompactComposer({ avatarUrl, displayName }: Props) {
   const [loading, setLoading] = useState(false)
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [imageUploading, setImageUploading] = useState(false)
+  const [gifUrl, setGifUrl] = useState<string | null>(null)
+  const [replyScope, setReplyScope] = useState<ReplyScope>('everyone')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const MAX = 280
@@ -34,21 +39,41 @@ export default function CompactComposer({ avatarUrl, displayName }: Props) {
     try {
       const url = await uploadImage(file, 'tweet-images')
       setImageUrl(url)
+      setGifUrl(null)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Image upload failed')
     }
     setImageUploading(false)
   }
 
+  function insertEmoji(emoji: string) {
+    const el = textareaRef.current
+    if (!el) { setContent(c => c + emoji); return }
+    const start = el.selectionStart
+    const end = el.selectionEnd
+    const next = content.slice(0, start) + emoji + content.slice(end)
+    setContent(next)
+    requestAnimationFrame(() => {
+      el.selectionStart = el.selectionEnd = start + emoji.length
+      el.focus()
+    })
+  }
+
+  function handleGifSelect(url: string) {
+    setGifUrl(url)
+    setImageUrl(null)
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!content.trim() && !imageUrl) return
-    if (remaining < 0) return
+    if ((!content.trim() && !imageUrl && !gifUrl) || remaining < 0) return
     setLoading(true)
     try {
-      await createTweet(content.trim(), undefined, imageUrl ?? undefined)
+      await createTweet(content.trim(), undefined, imageUrl ?? undefined, replyScope, gifUrl ?? undefined)
       setContent('')
       setImageUrl(null)
+      setGifUrl(null)
+      setReplyScope('everyone')
       setExpanded(false)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to post. Try again.')
@@ -77,32 +102,48 @@ export default function CompactComposer({ avatarUrl, displayName }: Props) {
             className="w-full bg-transparent border-none outline-none resize-none text-[16px] placeholder:text-muted-foreground/50 leading-relaxed"
           />
 
-          {imageUrl && (
+          {/* Media preview */}
+          {(imageUrl || gifUrl) && (
             <div className="relative inline-block mt-2">
-              <Image src={imageUrl} alt="Preview" width={300} height={200} className="rounded-xl max-h-40 object-cover border border-border" />
-              <button type="button" onClick={() => setImageUrl(null)} className="absolute top-1 right-1 bg-black/70 text-white rounded-full p-0.5 hover:bg-black/90">
+              {imageUrl ? (
+                <Image src={imageUrl} alt="Preview" width={300} height={200} className="rounded-xl max-h-40 object-cover border border-border" />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={gifUrl!} alt="GIF preview" className="rounded-xl max-h-40 object-cover border border-border" />
+              )}
+              <button type="button" onClick={() => { setImageUrl(null); setGifUrl(null) }} className="absolute top-1 right-1 bg-black/70 text-white rounded-full p-0.5 hover:bg-black/90">
                 <X className="h-3.5 w-3.5" />
               </button>
             </div>
           )}
 
           {expanded && (
-            <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50">
-              <div className="flex items-center gap-3">
-                <button type="button" onClick={() => fileInputRef.current?.click()} disabled={imageUploading}
-                  className="text-primary hover:text-primary/80 transition-colors disabled:opacity-50">
-                  <ImageIcon className="h-5 w-5" />
-                </button>
-                <span className={`text-xs tabular-nums ${remaining < 20 ? remaining < 0 ? 'text-destructive font-semibold' : 'text-yellow-500' : 'text-muted-foreground'}`}>
-                  {remaining}
-                </span>
+            <>
+              {/* Reply scope */}
+              <div className="mt-3 pt-2 border-t border-border/50">
+                <ReplyScopeButton value={replyScope} onChange={setReplyScope} />
               </div>
-              <button type="submit"
-                disabled={loading || imageUploading || (!content.trim() && !imageUrl) || remaining < 0}
-                className="px-5 py-1.5 rounded-full bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none">
-                {loading ? 'Posting...' : 'Post'}
-              </button>
-            </div>
+
+              {/* Toolbar */}
+              <div className="flex items-center justify-between mt-3">
+                <div className="flex items-center gap-0.5">
+                  <button type="button" onClick={() => fileInputRef.current?.click()} disabled={imageUploading || !!gifUrl}
+                    className="text-primary hover:text-primary/80 transition-colors disabled:opacity-50 p-1 rounded">
+                    <ImageIcon className="h-5 w-5" />
+                  </button>
+                  <GifPickerButton onSelect={handleGifSelect} />
+                  <EmojiPickerButton onInsert={insertEmoji} />
+                  <span className={`text-xs tabular-nums ml-1 ${remaining < 20 ? remaining < 0 ? 'text-destructive font-semibold' : 'text-yellow-500' : 'text-muted-foreground'}`}>
+                    {remaining}
+                  </span>
+                </div>
+                <button type="submit"
+                  disabled={loading || imageUploading || (!content.trim() && !imageUrl && !gifUrl) || remaining < 0}
+                  className="px-5 py-1.5 rounded-full bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none">
+                  {loading ? 'Posting...' : 'Post'}
+                </button>
+              </div>
+            </>
           )}
         </div>
 

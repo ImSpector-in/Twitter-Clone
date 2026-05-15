@@ -8,6 +8,9 @@ import { createTweet } from '@/lib/actions/tweets'
 import { uploadImage } from '@/lib/uploadImage'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import ReplyScopeButton, { type ReplyScope } from './ReplyScopeButton'
+import EmojiPickerButton from './EmojiPickerButton'
+import GifPickerButton from './GifPickerButton'
 
 const MAX = 280
 
@@ -23,7 +26,10 @@ export default function TweetComposer({ onSuccess, replyToId, placeholder = "Wha
   const [loading, setLoading] = useState(false)
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [imageUploading, setImageUploading] = useState(false)
+  const [gifUrl, setGifUrl] = useState<string | null>(null)
+  const [replyScope, setReplyScope] = useState<ReplyScope>('everyone')
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
   const remaining = MAX - content.length
 
   async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -35,21 +41,42 @@ export default function TweetComposer({ onSuccess, replyToId, placeholder = "Wha
     try {
       const url = await uploadImage(file, 'tweet-images')
       setImageUrl(url)
+      setGifUrl(null)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Image upload failed')
     }
     setImageUploading(false)
   }
 
+  function insertEmoji(emoji: string) {
+    const el = textareaRef.current
+    if (!el) { setContent(c => c + emoji); return }
+    const start = el.selectionStart
+    const end = el.selectionEnd
+    const next = content.slice(0, start) + emoji + content.slice(end)
+    setContent(next)
+    requestAnimationFrame(() => {
+      el.selectionStart = el.selectionEnd = start + emoji.length
+      el.focus()
+    })
+  }
+
+  function handleGifSelect(url: string) {
+    setGifUrl(url)
+    setImageUrl(null)
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!content.trim() || remaining < 0) return
+    if ((!content.trim() && !imageUrl && !gifUrl) || remaining < 0) return
 
     setLoading(true)
     try {
-      await createTweet(content.trim(), replyToId, imageUrl ?? undefined)
+      await createTweet(content.trim(), replyToId, imageUrl ?? undefined, replyScope, gifUrl ?? undefined)
       setContent('')
       setImageUrl(null)
+      setGifUrl(null)
+      setReplyScope('everyone')
       onSuccess?.()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to post. Try again.')
@@ -75,27 +102,38 @@ export default function TweetComposer({ onSuccess, replyToId, placeholder = "Wha
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-card border border-border rounded-2xl p-4 space-y-3 mb-3">
+    <form onSubmit={handleSubmit} className="space-y-3">
       <Textarea
+        ref={textareaRef}
         placeholder={placeholder}
         value={content}
         onChange={(e) => setContent(e.target.value)}
-        rows={3}
-        className="resize-none border-none shadow-none focus-visible:ring-0 text-base p-0"
+        rows={4}
+        className="resize-none border-none shadow-none focus-visible:ring-0 text-base p-0 bg-transparent"
       />
 
-      {imageUrl && (
+      {/* Media preview */}
+      {(imageUrl || gifUrl) && (
         <div className="relative inline-block">
-          <Image
-            src={imageUrl}
-            alt="Upload preview"
-            width={300}
-            height={200}
-            className="rounded-xl object-cover max-h-48 w-auto"
-          />
+          {imageUrl ? (
+            <Image
+              src={imageUrl}
+              alt="Upload preview"
+              width={300}
+              height={200}
+              className="rounded-xl object-cover max-h-48 w-auto"
+            />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={gifUrl!}
+              alt="GIF preview"
+              className="rounded-xl max-h-48 w-auto object-cover"
+            />
+          )}
           <button
             type="button"
-            onClick={() => setImageUrl(null)}
+            onClick={() => { setImageUrl(null); setGifUrl(null) }}
             className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-0.5 hover:bg-black/80"
           >
             <X className="h-4 w-4" />
@@ -103,21 +141,36 @@ export default function TweetComposer({ onSuccess, replyToId, placeholder = "Wha
         </div>
       )}
 
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      {/* Reply scope — only shown on new posts, not replies */}
+      {!replyToId && (
+        <div className="border-t border-border/40 pt-2">
+          <ReplyScopeButton value={replyScope} onChange={setReplyScope} />
+        </div>
+      )}
+
+      {/* Toolbar */}
+      <div className="flex items-center justify-between border-t border-border/40 pt-2">
+        <div className="flex items-center gap-0.5">
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            disabled={imageUploading}
-            className="text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+            disabled={imageUploading || !!gifUrl}
+            className="text-muted-foreground hover:text-primary transition-colors p-1 rounded disabled:opacity-40"
+            title="Photo"
           >
             <ImageIcon className="h-5 w-5" />
           </button>
-          <span className={`text-sm ${remaining < 20 ? remaining < 0 ? 'text-destructive font-semibold' : 'text-yellow-500' : 'text-muted-foreground'}`}>
+          <GifPickerButton onSelect={handleGifSelect} />
+          <EmojiPickerButton onInsert={insertEmoji} />
+          <span className={`text-sm ml-2 tabular-nums ${remaining < 20 ? remaining < 0 ? 'text-destructive font-semibold' : 'text-yellow-500' : 'text-muted-foreground'}`}>
             {remaining}
           </span>
         </div>
-        <Button type="submit" disabled={loading || imageUploading || (!content.trim() && !imageUrl) || remaining < 0} className="rounded-full px-5">
+        <Button
+          type="submit"
+          disabled={loading || imageUploading || (!content.trim() && !imageUrl && !gifUrl) || remaining < 0}
+          className="rounded-full px-5"
+        >
           {loading ? 'Posting...' : 'Post'}
         </Button>
       </div>

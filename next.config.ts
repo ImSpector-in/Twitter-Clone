@@ -13,6 +13,14 @@ const nextConfig: NextConfig = {
         hostname: 'api.dicebear.com',
         pathname: '/9.x/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'media.tenor.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'c.tenor.com',
+      },
     ],
   },
 
@@ -30,10 +38,10 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "img-src 'self' https://ujohfqnxtmoraufztjob.supabase.co https://api.dicebear.com data: blob:",
+              "img-src 'self' https://ujohfqnxtmoraufztjob.supabase.co https://api.dicebear.com https://media.tenor.com https://c.tenor.com data: blob:",
               "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
               "style-src 'self' 'unsafe-inline'",
-              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.groq.com",
+              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.groq.com https://tenor.googleapis.com",
               "font-src 'self' data:",
               "frame-ancestors 'none'",
             ].join('; '),

@@ -7,6 +7,8 @@ export type TweetWithProfile = {
   reply_to_id: string | null
   retweet_of_id: string | null
   image_url: string | null
+  gif_url: string | null
+  reply_scope: string | null
   like_count: number
   liked_by_me: boolean
   reply_count: number
@@ -27,6 +29,8 @@ export type TweetWithProfile = {
     edited_at: string | null
     user_id: string
     image_url: string | null
+    gif_url: string | null
+    reply_scope: string | null
     link_status: string | null
     like_count: number
     liked_by_me: boolean
