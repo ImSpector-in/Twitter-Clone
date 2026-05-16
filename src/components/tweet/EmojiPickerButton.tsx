@@ -1,11 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { Smile } from 'lucide-react'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
-// Load both the picker component and its data lazily so they don't bloat the initial bundle
 const Picker = dynamic(
   async () => {
     const [{ default: EmojiPicker }, { default: data }] = await Promise.all([
@@ -25,34 +23,41 @@ type Props = {
 
 export default function EmojiPickerButton({ onInsert }: Props) {
   const [open, setOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      if (!containerRef.current?.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className="text-muted-foreground hover:text-primary transition-colors p-1 rounded"
-          title="Emoji"
-        >
-          <Smile className="h-5 w-5" />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent
-        className="w-auto p-0 border-none shadow-xl"
-        side="top"
-        align="start"
-        sideOffset={8}
+    <div ref={containerRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="text-muted-foreground hover:text-primary transition-colors p-1 rounded"
+        title="Emoji"
       >
-        <Picker
-          onEmojiSelect={(emoji: any) => {
-            onInsert(emoji.native)
-            setOpen(false)
-          }}
-          theme="auto"
-          previewPosition="none"
-          skinTonePosition="none"
-        />
-      </PopoverContent>
-    </Popover>
+        <Smile className="h-5 w-5" />
+      </button>
+
+      {open && (
+        <div className="absolute bottom-full left-0 mb-2 z-50">
+          <Picker
+            onEmojiSelect={(emoji: any) => {
+              onInsert(emoji.native)
+              setOpen(false)
+            }}
+            theme="auto"
+            previewPosition="none"
+            skinTonePosition="none"
+          />
+        </div>
+      )}
+    </div>
   )
 }
