@@ -66,12 +66,13 @@ export default function TopNav({ username, displayName, avatarUrl, onLogoClick }
           <div className="flex items-center gap-2 shrink-0 ml-auto">
             <button
               onClick={() => setPostOpen(true)}
+              aria-label="New post"
               className="flex items-center gap-1.5 h-9 px-4 rounded-full bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 active:scale-[0.98] transition-all"
             >
               <Plus className="h-4 w-4" />
               <span className="hidden sm:inline">Post</span>
             </button>
-            <Link href={`/profile/${username}`}>
+            <Link href={`/profile/${username}`} aria-label={`View profile for ${username}`}>
               <Avatar className="h-8 w-8 ring-2 ring-border cursor-pointer hover:ring-primary transition-all">
                 <AvatarImage src={avatarUrl ?? undefined} />
                 <AvatarFallback className="text-xs bg-gradient-to-br from-primary to-pink-500 text-white font-semibold">

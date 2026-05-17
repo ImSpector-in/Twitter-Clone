@@ -8,23 +8,25 @@ type Props = {
   username: string
 }
 
-const navItems = (username: string) => [
-  { href: '/home', icon: Home },
-  { href: '/discover', icon: Search },
-  { href: `/profile/${username}`, icon: User },
-]
-
 export default function BottomNav({ username }: Props) {
   const pathname = usePathname()
 
+  const items = [
+    { href: '/home',                  label: 'Home',    icon: Home },
+    { href: '/discover',              label: 'Search',  icon: Search },
+    { href: `/profile/${username}`,   label: 'Profile', icon: User },
+  ]
+
   return (
-    <nav className="fixed bottom-0 left-0 right-0 border-t bg-background flex md:hidden z-50">
-      {navItems(username).map(({ href, icon: Icon }) => {
-        const active = pathname === href || (href.includes('/profile/') && pathname.startsWith('/profile/'))
+    <nav className="fixed bottom-0 left-0 right-0 border-t bg-background flex md:hidden z-50" aria-label="Mobile navigation">
+      {items.map(({ href, label, icon: Icon }) => {
+        const isOwnProfile = href === `/profile/${username}`
+        const active = pathname === href || (isOwnProfile && pathname === `/profile/${username}`)
         return (
           <Link
             key={href}
             href={href}
+            aria-label={label}
             className={`flex-1 flex items-center justify-center py-3 transition-colors hover:bg-muted ${active ? 'text-primary' : 'text-muted-foreground'}`}
           >
             <Icon className={`h-6 w-6 ${active ? 'stroke-[2.5px]' : ''}`} />

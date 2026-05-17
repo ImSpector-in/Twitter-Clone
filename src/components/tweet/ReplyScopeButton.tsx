@@ -1,14 +1,15 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useRef } from 'react'
 import { Globe2, Users, MessageSquareOff, ChevronDown } from 'lucide-react'
+import { useClickOutside } from '@/hooks/useClickOutside'
 
 export type ReplyScope = 'everyone' | 'followers' | 'nobody'
 
 const OPTIONS = [
-  { value: 'everyone' as ReplyScope, label: 'Everyone', Icon: Globe2, description: 'Anyone can reply' },
-  { value: 'followers' as ReplyScope, label: 'Followers', Icon: Users, description: 'Only your followers' },
-  { value: 'nobody' as ReplyScope, label: 'Nobody', Icon: MessageSquareOff, description: 'Replies turned off' },
+  { value: 'everyone' as ReplyScope,  label: 'Everyone',  Icon: Globe2,           description: 'Anyone can reply' },
+  { value: 'followers' as ReplyScope, label: 'Followers', Icon: Users,            description: 'Only your followers' },
+  { value: 'nobody' as ReplyScope,    label: 'Nobody',    Icon: MessageSquareOff, description: 'Replies turned off' },
 ]
 
 type Props = {
@@ -21,21 +22,15 @@ export default function ReplyScopeButton({ value, onChange }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const current = OPTIONS.find(o => o.value === value) ?? OPTIONS[0]
   const { Icon } = current
-
-  useEffect(() => {
-    if (!open) return
-    const handler = (e: MouseEvent) => {
-      if (!containerRef.current?.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [open])
+  useClickOutside(containerRef, () => setOpen(false), open)
 
   return (
     <div ref={containerRef} className="relative">
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
+        aria-label={`Reply scope: ${current.label}`}
+        aria-expanded={open}
         className="flex items-center gap-1 text-xs font-semibold text-primary hover:bg-primary/10 rounded-full px-2.5 py-1 transition-colors"
       >
         <Icon className="h-3.5 w-3.5" />
@@ -44,7 +39,7 @@ export default function ReplyScopeButton({ value, onChange }: Props) {
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-1 w-56 rounded-lg bg-popover border border-border shadow-xl z-50 p-1">
+        <div className="absolute top-full left-0 mt-1 w-56 rounded-lg bg-popover border border-border shadow-xl z-50 p-1" role="menu">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground px-2 py-1.5">
             Who can reply?
           </p>
@@ -52,6 +47,7 @@ export default function ReplyScopeButton({ value, onChange }: Props) {
             <button
               key={v}
               type="button"
+              role="menuitem"
               onClick={() => { onChange(v); setOpen(false) }}
               className={`w-full flex items-center gap-3 px-2 py-2 rounded-lg text-sm hover:bg-muted transition-colors text-left ${value === v ? 'text-primary font-semibold' : ''}`}
             >
@@ -60,7 +56,7 @@ export default function ReplyScopeButton({ value, onChange }: Props) {
                 <div>{label}</div>
                 <div className="text-xs text-muted-foreground font-normal">{description}</div>
               </div>
-              {value === v && <span className="ml-auto text-primary">✓</span>}
+              {value === v && <span className="ml-auto text-primary" aria-hidden>✓</span>}
             </button>
           ))}
         </div>
