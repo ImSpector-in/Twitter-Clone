@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, Search, Bell, TrendingUp, Bookmark, User, Settings, MessageSquare } from 'lucide-react'
-import QuotoraLogo from '@/components/ui/QuotoraLogo'
 
 type Props = {
   username: string
@@ -27,10 +26,6 @@ export default function Sidebar({ username, unreadCount, unreadDmCount }: Props)
 
   return (
     <nav className="flex flex-col gap-1 py-4 px-2">
-      <Link href="/home" className="flex items-center gap-2 px-4 py-3 mb-1">
-        <QuotoraLogo size={30} />
-        <span className="font-bold text-lg tracking-tight">Quotora</span>
-      </Link>
       {navItems(username).map(({ href, label, icon: Icon }) => {
         const active = pathname === href || (href.includes('/profile/') && pathname.startsWith('/profile/'))
         const isNotifications = href === '/notifications'
