@@ -43,23 +43,36 @@ export default function LoginForm() {
     router.push('/home'); router.refresh()
   }
 
+  async function handleSignOut() {
+    setLoading(true)
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    setShowMFA(false)
+    setLoading(false)
+    router.refresh()
+  }
+
   if (showMFA) {
     return (
-      <form onSubmit={handleMFAVerify} className="space-y-4">
-        <p className="text-center text-sm text-gray-500">Enter the 6-digit code from your authenticator app.</p>
-        <label htmlFor="mfa-code" className="sr-only">Authentication code</label>
-        <input id="mfa-code" type="text" inputMode="numeric" value={mfaCode}
-          onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ''))}
-          placeholder="000000" maxLength={6} autoFocus required
-          className={`${inputClass} text-center text-xl tracking-[0.5em] pl-5`}
-        />
-        {error && <p role="alert" className="text-sm text-red-500 text-center">{error}</p>}
-        <button type="submit" disabled={loading || mfaCode.length !== 6}
-          className="w-full h-14 rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold text-base hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50">
-          {loading ? 'Verifying...' : 'Verify'}
+      <div className="space-y-4">
+        <form onSubmit={handleMFAVerify} className="space-y-4">
+          <p className="text-center text-sm text-gray-500">Enter the 6-digit code from your authenticator app.</p>
+          <label htmlFor="mfa-code" className="sr-only">Authentication code</label>
+          <input id="mfa-code" type="text" inputMode="numeric" value={mfaCode}
+            onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ''))}
+            placeholder="000000" maxLength={6} autoFocus required
+            className={`${inputClass} text-center text-xl tracking-[0.5em] pl-5`}
+          />
+          {error && <p role="alert" className="text-sm text-red-500 text-center">{error}</p>}
+          <button type="submit" disabled={loading || mfaCode.length !== 6}
+            className="w-full h-14 rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold text-base hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50">
+            {loading ? 'Verifying...' : 'Verify'}
+          </button>
+        </form>
+        <button type="button" onClick={handleSignOut} disabled={loading} className="w-full text-sm text-gray-400 hover:text-gray-600 font-medium">
+          Sign out and try again
         </button>
-        <button type="button" onClick={() => setShowMFA(false)} className="w-full text-sm text-gray-400 hover:text-gray-600">Back</button>
-      </form>
+      </div>
     )
   }
 

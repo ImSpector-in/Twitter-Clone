@@ -52,36 +52,54 @@ export default function MFAPage() {
     router.refresh()
   }
 
+  async function handleSignOut() {
+    setLoading(true)
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push('/login')
+    router.refresh()
+  }
+
   return (
     <div className="min-h-screen bg-[#fdf0ea] flex items-center justify-center px-4">
       <div className="w-full max-w-sm space-y-6">
         <div className="flex flex-col items-center gap-1">
           <QuotoraLogo size={48} />
           <h1 className="text-2xl font-bold text-gray-800">Two-factor verification</h1>
-          <p className="text-sm text-gray-500">Enter the 6-digit code from your authenticator app.</p>
+          <p className="text-sm text-gray-500 text-center">Enter the 6-digit code from your authenticator app.</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-3xl shadow-xl p-8 space-y-4">
-          <input
-            type="text"
-            inputMode="numeric"
-            placeholder="000000"
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            maxLength={6}
-            required
-            autoFocus
-            className="w-full h-14 rounded-2xl border border-gray-200 bg-white text-gray-800 text-center text-2xl tracking-widest placeholder:text-gray-300 outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition-all"
-          />
-          {error && <p className="text-sm text-red-500 text-center">{error}</p>}
+        <div className="bg-white rounded-3xl shadow-xl p-8 space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="000000"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              maxLength={6}
+              required
+              autoFocus
+              className="w-full h-14 rounded-2xl border border-gray-200 bg-white text-gray-800 text-center text-2xl tracking-widest placeholder:text-gray-300 outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition-all"
+            />
+            {error && <p className="text-sm text-red-500 text-center">{error}</p>}
+            <button
+              type="submit"
+              disabled={loading || code.length < 6}
+              className="w-full h-14 rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold text-lg hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50"
+            >
+              {loading ? 'Verifying...' : 'Verify'}
+            </button>
+          </form>
+
           <button
-            type="submit"
-            disabled={loading || code.length < 6}
-            className="w-full h-14 rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold text-lg hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50"
+            onClick={handleSignOut}
+            disabled={loading}
+            className="w-full text-sm text-gray-400 hover:text-gray-600 font-medium transition-colors pt-2"
           >
-            {loading ? 'Verifying...' : 'Verify'}
+            Sign out and try again
           </button>
-        </form>
+        </div>
       </div>
     </div>
   )
