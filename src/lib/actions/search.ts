@@ -23,10 +23,13 @@ export async function searchTweets(query: string) {
     ...(mutes.data?.map((m) => m.muted_id) ?? []),
   ])
 
+  // Use full-text search via the GIN index (tweets_content_fts_idx).
+  // textSearch uses plainto_tsquery under the hood for websearch-style input,
+  // which is safe against injection and hits the GIN index automatically.
   let dbQuery = supabase
     .from('tweets')
     .select('id, content, created_at, profiles!tweets_user_id_fkey (username, display_name, avatar_url)')
-    .ilike('content', `%${query.trim()}%`)
+    .textSearch('content', query.trim(), { type: 'websearch', config: 'english' })
     .is('reply_to_id', null)
     .is('retweet_of_id', null)
     .order('created_at', { ascending: false })

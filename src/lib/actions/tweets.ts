@@ -136,6 +136,49 @@ export async function createTweet(content: string, replyToId?: string, imageUrl?
 
   if (error) throw new Error(error.message)
 
+  // Fire mention notifications — best-effort, never fail the tweet
+  if (data?.id) {
+    try {
+      const mentionRegex = /@(\w+)/g
+      const rawMatches = [...validatedContent.matchAll(mentionRegex)].map(m => m[1].toLowerCase())
+      const uniqueUsernames = [...new Set(rawMatches)]
+
+      if (uniqueUsernames.length > 0) {
+        // Get the author's own username so we can exclude self-mentions
+        const { data: authorProfile } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('id', user.id)
+          .single()
+
+        const authorUsername = authorProfile?.username?.toLowerCase()
+
+        const mentionedUsernames = uniqueUsernames.filter(u => u !== authorUsername)
+
+        if (mentionedUsernames.length > 0) {
+          // Resolve usernames to profile ids
+          const { data: mentionedProfiles } = await supabase
+            .from('profiles')
+            .select('id, username')
+            .in('username', mentionedUsernames)
+
+          if (mentionedProfiles && mentionedProfiles.length > 0) {
+            const notificationRows = mentionedProfiles.map(p => ({
+              user_id: p.id,
+              actor_id: user.id,
+              type: 'mention' as const,
+              tweet_id: data.id,
+            }))
+
+            await supabase.from('notifications').insert(notificationRows)
+          }
+        }
+      }
+    } catch {
+      // Mention notifications are non-critical — swallow any errors
+    }
+  }
+
   // Scan URLs — use admin client since authenticated users can no longer write link_status (Q-031)
   if (urls.length > 0 && data?.id) {
     const status = await scanUrls(urls)

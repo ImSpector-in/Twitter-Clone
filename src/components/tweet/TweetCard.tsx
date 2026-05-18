@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { formatDistanceToNow } from 'date-fns'
 
@@ -20,7 +20,7 @@ function safeFromNow(dateStr: string | null | undefined, tweetId?: string): stri
     return ''
   }
 }
-import { Repeat2 } from 'lucide-react'
+import { Repeat2, Users, AtSign } from 'lucide-react'
 import { toast } from 'sonner'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import TweetMenu from './TweetMenu'
@@ -32,6 +32,106 @@ import ShareButton from './ShareButton'
 import { updateTweet } from '@/lib/actions/tweets'
 import { renderWithHashtags, LinkFlaggedBanner } from '@/lib/utils/hashtags'
 import type { TweetWithProfile } from '@/types'
+
+// ---------------------------------------------------------------------------
+// OG link-preview helpers
+// ---------------------------------------------------------------------------
+
+type OgData = {
+  title: string | null
+  description: string | null
+  image: string | null
+  siteName: string | null
+  url: string
+}
+
+// Module-level cache so the same URL is only fetched once per page load
+const ogCache = new Map<string, OgData | null>()
+
+const URL_RE = /https?:\/\/[^\s<>"']+/
+
+function extractFirstUrl(text: string): string | null {
+  const m = text.match(URL_RE)
+  return m ? m[0].replace(/[.,!?;:)]+$/, '') : null
+}
+
+function getDomain(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '')
+  } catch {
+    return url
+  }
+}
+
+function LinkPreviewCard({ url }: { url: string }) {
+  const [og, setOg] = useState<OgData | null | undefined>(undefined) // undefined = loading
+
+  useEffect(() => {
+    if (ogCache.has(url)) {
+      setOg(ogCache.get(url) ?? null)
+      return
+    }
+
+    let cancelled = false
+    fetch(`/api/og?url=${encodeURIComponent(url)}`)
+      .then((r) => r.json())
+      .then((data: OgData) => {
+        if (cancelled) return
+        const value = data.title ? data : null
+        ogCache.set(url, value)
+        setOg(value)
+      })
+      .catch(() => {
+        if (!cancelled) {
+          ogCache.set(url, null)
+          setOg(null)
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [url])
+
+  // Don't render anything while loading or if no useful data
+  if (!og) return null
+
+  const domain = getDomain(url)
+
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer nofollow"
+      onClick={(e) => e.stopPropagation()}
+      className="mt-2 flex items-stretch gap-3 rounded-xl border border-border bg-muted/30 hover:bg-muted/60 transition-colors overflow-hidden no-underline"
+    >
+      {og.image && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={og.image}
+          alt=""
+          className="h-20 w-20 shrink-0 object-cover"
+        />
+      )}
+      <div className="flex flex-col justify-center gap-0.5 py-2.5 pr-3 min-w-0">
+        <span className="text-[11px] text-muted-foreground">{domain}</span>
+        <span className="text-sm font-medium leading-snug line-clamp-2 text-foreground">
+          {og.title}
+        </span>
+        {og.description && (
+          <span className="text-xs text-muted-foreground line-clamp-2 leading-snug">
+            {og.description}
+          </span>
+        )}
+      </div>
+    </a>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// TweetCard
+// ---------------------------------------------------------------------------
 
 type Props = {
   tweet: TweetWithProfile
@@ -86,6 +186,12 @@ export default function TweetCard({ tweet, currentUserId, retweetedByUsername, i
   const initials = displayName.slice(0, 2).toUpperCase()
   const gradient = getUserGradient(username)
   const isHot = statsSource.like_count >= 10
+
+  // Extract first URL for link preview (only from non-flagged content)
+  const previewUrl =
+    displayTweet.content && displayTweet.link_status !== 'flagged'
+      ? extractFirstUrl(displayTweet.content)
+      : null
 
   function handleCardClick() {
     router.push(`/tweet/${displayTweet.id}`)
@@ -204,6 +310,13 @@ export default function TweetCard({ tweet, currentUserId, retweetedByUsername, i
             )
           )}
 
+          {/* Link preview card — only when not editing and not a flagged link */}
+          {!isEditing && previewUrl && (
+            <div onClick={stopProp}>
+              <LinkPreviewCard url={previewUrl} />
+            </div>
+          )}
+
           {/* Embedded quoted tweet */}
           {isQuoteTweet && tweet.original && (
             <div
@@ -260,11 +373,27 @@ export default function TweetCard({ tweet, currentUserId, retweetedByUsername, i
             </div>
           )}
 
-          {/* Reply scope badge */}
+          {/* Reply scope indicator — only shown for restricted scopes */}
           {displayTweet.reply_scope && displayTweet.reply_scope !== 'everyone' && (
-            <p className="text-xs text-muted-foreground">
-              {displayTweet.reply_scope === 'followers' ? '👥 Followers can reply' : '🚫 Replies turned off'}
-            </p>
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              {displayTweet.reply_scope === 'followers' ? (
+                <>
+                  <Users className="h-3.5 w-3.5 shrink-0" />
+                  <span>Followers can reply</span>
+                </>
+              ) : displayTweet.reply_scope === 'mentioned' ? (
+                <>
+                  <AtSign className="h-3.5 w-3.5 shrink-0" />
+                  <span>Mentioned users can reply</span>
+                </>
+              ) : (
+                // 'nobody' or any future closed scope
+                <>
+                  <AtSign className="h-3.5 w-3.5 shrink-0 opacity-60" />
+                  <span>Replies turned off</span>
+                </>
+              )}
+            </div>
           )}
 
           {/* Action bar — left cluster + bookmark on right like Hivit */}

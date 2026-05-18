@@ -2,8 +2,8 @@ import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { getFeedTweets, getAllTweets } from '@/lib/queries/tweets'
 import HomeTabs from '@/components/home/HomeTabs'
-import TweetList from '@/components/tweet/TweetList'
 import HomeComposer from '@/components/tweet/HomeComposer'
+import FeedInfiniteScroll from '@/components/home/FeedInfiniteScroll'
 import { TweetListSkeleton } from '@/components/tweet/TweetSkeleton'
 
 type Props = {
@@ -11,14 +11,16 @@ type Props = {
 }
 
 async function Feed({ userId, isFollowing }: { userId: string; isFollowing: boolean }) {
-  const tweets = isFollowing
+  const { tweets, nextCursor } = isFollowing
     ? await getFeedTweets(userId)
     : await getAllTweets(userId)
 
   return (
-    <TweetList
-      tweets={tweets as any}
+    <FeedInfiniteScroll
+      initialTweets={tweets as any}
+      initialCursor={nextCursor}
       currentUserId={userId}
+      feedType={isFollowing ? 'following' : 'for-you'}
       emptyMessage={isFollowing ? 'Follow someone to see their tweets here.' : 'No tweets yet.'}
     />
   )

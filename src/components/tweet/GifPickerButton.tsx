@@ -4,9 +4,6 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { Search, X } from 'lucide-react'
 import { useClickOutside } from '@/hooks/useClickOutside'
 
-const GIPHY_BASE = 'https://api.giphy.com/v1/gifs'
-const GIPHY_LIMIT = 20
-const GIPHY_RATING = 'g'
 const SEARCH_DEBOUNCE_MS = 400
 
 type GiphyImageVariant = { url: string }
@@ -20,13 +17,13 @@ type GiphyItem = {
 }
 type GifResult = { id: string; url: string; preview: string }
 
-async function fetchGiphy(query: string, apiKey: string): Promise<GifResult[]> {
-  const endpoint = query.trim()
-    ? `${GIPHY_BASE}/search?api_key=${apiKey}&q=${encodeURIComponent(query)}&limit=${GIPHY_LIMIT}&rating=${GIPHY_RATING}`
-    : `${GIPHY_BASE}/trending?api_key=${apiKey}&limit=${GIPHY_LIMIT}&rating=${GIPHY_RATING}`
+async function fetchGiphy(query: string): Promise<GifResult[]> {
+  const url = query.trim()
+    ? `/api/giphy?q=${encodeURIComponent(query)}`
+    : `/api/giphy`
 
-  const res = await fetch(endpoint)
-  if (!res.ok) throw new Error(`GIPHY ${res.status}`)
+  const res = await fetch(url)
+  if (!res.ok) throw new Error(`GIPHY proxy ${res.status}`)
   const json = await res.json()
 
   return (json.data ?? []).map((g: GiphyItem) => ({
@@ -35,8 +32,6 @@ async function fetchGiphy(query: string, apiKey: string): Promise<GifResult[]> {
     preview: g.images?.fixed_height_small?.url ?? g.images?.fixed_height?.url ?? '',
   })).filter((g: GifResult) => g.url)
 }
-
-const apiKey = process.env.NEXT_PUBLIC_GIPHY_API_KEY ?? ''
 
 type Props = {
   onSelect: (gifUrl: string) => void
@@ -52,11 +47,10 @@ export default function GifPickerButton({ onSelect }: Props) {
   useClickOutside(containerRef, () => setOpen(false), open)
 
   const load = useCallback(async (q: string) => {
-    if (!apiKey) return
     setLoading(true)
     setError(false)
     try {
-      setGifs(await fetchGiphy(q, apiKey))
+      setGifs(await fetchGiphy(q))
     } catch (e) {
       console.error('GIPHY fetch failed:', e)
       setError(true)
@@ -114,40 +108,32 @@ export default function GifPickerButton({ onSelect }: Props) {
             )}
           </div>
 
-          {!apiKey ? (
-            <p className="text-xs text-muted-foreground text-center py-6">
-              Add <code className="font-mono bg-muted px-1 rounded">NEXT_PUBLIC_GIPHY_API_KEY</code> to enable GIFs
-            </p>
-          ) : (
-            <>
-              <div className="grid grid-cols-2 gap-1 max-h-60 overflow-y-auto rounded">
-                {loading && (
-                  <div className="col-span-2 text-center text-xs text-muted-foreground py-6">Loading...</div>
-                )}
-                {!loading && error && (
-                  <div className="col-span-2 text-center text-xs text-muted-foreground py-6">
-                    Couldn&apos;t load GIFs. Try again.
-                  </div>
-                )}
-                {!loading && !error && gifs.map(gif => (
-                  <button
-                    key={gif.id}
-                    type="button"
-                    onClick={() => { onSelect(gif.url); setOpen(false) }}
-                    aria-label="Select GIF"
-                    className="rounded overflow-hidden hover:ring-2 hover:ring-primary transition-all focus:outline-none"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={gif.preview} alt="" className="w-full h-20 object-cover" />
-                  </button>
-                ))}
-                {!loading && !error && gifs.length === 0 && (
-                  <div className="col-span-2 text-center text-xs text-muted-foreground py-6">No GIFs found</div>
-                )}
+          <div className="grid grid-cols-2 gap-1 max-h-60 overflow-y-auto rounded">
+            {loading && (
+              <div className="col-span-2 text-center text-xs text-muted-foreground py-6">Loading...</div>
+            )}
+            {!loading && error && (
+              <div className="col-span-2 text-center text-xs text-muted-foreground py-6">
+                Couldn&apos;t load GIFs. Try again.
               </div>
-              <p className="text-[10px] text-muted-foreground text-right">Powered by GIPHY</p>
-            </>
-          )}
+            )}
+            {!loading && !error && gifs.map(gif => (
+              <button
+                key={gif.id}
+                type="button"
+                onClick={() => { onSelect(gif.url); setOpen(false) }}
+                aria-label="Select GIF"
+                className="rounded overflow-hidden hover:ring-2 hover:ring-primary transition-all focus:outline-none"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={gif.preview} alt="" className="w-full h-20 object-cover" />
+              </button>
+            ))}
+            {!loading && !error && gifs.length === 0 && (
+              <div className="col-span-2 text-center text-xs text-muted-foreground py-6">No GIFs found</div>
+            )}
+          </div>
+          <p className="text-[10px] text-muted-foreground text-right">Powered by GIPHY</p>
         </div>
       )}
     </div>

@@ -36,6 +36,19 @@ export async function POST(request: Request) {
 
   const supabase = createAdminClient()
 
+  // Deduplication: skip if this bot already posted in the last 30 minutes
+  const { data: recentPost } = await supabase
+    .from('tweets')
+    .select('id')
+    .eq('user_id', userId)
+    .gt('created_at', new Date(Date.now() - 30 * 60 * 1000).toISOString())
+    .limit(1)
+    .maybeSingle()
+
+  if (recentPost) {
+    return NextResponse.json({ ok: true, skipped: true, reason: 'already posted recently' })
+  }
+
   // AI news bot: fetch a real article and generate commentary
   if (bot === 'ai_news') {
     const article = await fetchLatestAINews()

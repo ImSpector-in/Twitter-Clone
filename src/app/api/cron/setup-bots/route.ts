@@ -14,7 +14,7 @@ const BOT_PROFILES: Record<BotKey, { username: string; display_name: string; bio
   ux_critic: {
     username: 'ux_critic',
     display_name: 'UX Critic',
-    bio: 'Roasting this app one feature at a time. Constructive feedback only. If I tweet it, build it.',
+    bio: 'Shipped 3 production social apps. I know Next.js + Supabase. Quotora is solid work — and I have specific notes.',
   },
   buildinpublic: {
     username: 'solo_hustle',

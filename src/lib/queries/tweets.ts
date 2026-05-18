@@ -104,7 +104,14 @@ function filterMutedWords(tweets: any[], mutedWordList: string[]) {
   )
 }
 
-export async function getFeedTweets(userId: string) {
+const PAGE_SIZE = 20
+
+export type PaginatedTweetsResult = {
+  tweets: any[]
+  nextCursor: string | null
+}
+
+export async function getFeedTweets(userId: string, cursor?: string | null): Promise<PaginatedTweetsResult> {
   const supabase = await createClient()
   const { excluded, mutedWordList } = await getExcludedUserIds(userId)
 
@@ -116,21 +123,28 @@ export async function getFeedTweets(userId: string) {
   const followingIds = follows?.map((f) => f.following_id) ?? []
   const feedUserIds = [...followingIds, userId].filter((id) => !excluded.has(id))
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('tweets')
     .select(TWEET_SELECT)
     .in('user_id', feedUserIds)
     .is('reply_to_id', null)
     .order('created_at', { ascending: false })
-    .limit(50)
+    .limit(PAGE_SIZE)
 
+  if (cursor) {
+    query = query.lt('created_at', cursor)
+  }
+
+  const { data, error } = await query
   if (error) throw new Error(error.message)
   const filtered = filterMutedWords(data ?? [], mutedWordList)
   const withOriginals = await attachOriginals(filtered)
-  return attachLikedBy(withOriginals, userId)
+  const tweets = await attachLikedBy(withOriginals, userId)
+  const nextCursor = tweets.length === PAGE_SIZE ? tweets[tweets.length - 1].created_at : null
+  return { tweets, nextCursor }
 }
 
-export async function getAllTweets(userId?: string) {
+export async function getAllTweets(userId?: string, cursor?: string | null): Promise<PaginatedTweetsResult> {
   const supabase = await createClient()
 
   let excluded = new Set<string>()
@@ -141,18 +155,28 @@ export async function getAllTweets(userId?: string) {
     mutedWordList = result.mutedWordList
   }
 
-  let query = supabase.from('tweets').select(TWEET_SELECT).is('reply_to_id', null).order('created_at', { ascending: false }).limit(50)
+  let query = supabase
+    .from('tweets')
+    .select(TWEET_SELECT)
+    .is('reply_to_id', null)
+    .order('created_at', { ascending: false })
+    .limit(PAGE_SIZE)
 
   if (excluded.size > 0) {
     query = query.not('user_id', 'in', `(${[...excluded].join(',')})`)
+  }
+
+  if (cursor) {
+    query = query.lt('created_at', cursor)
   }
 
   const { data, error } = await query
   if (error) throw new Error(error.message)
   const filtered = filterMutedWords(data ?? [], mutedWordList)
   const withOriginals = await attachOriginals(filtered)
-  if (!userId) return withOriginals
-  return attachLikedBy(withOriginals, userId)
+  const tweets = !userId ? withOriginals : await attachLikedBy(withOriginals, userId)
+  const nextCursor = tweets.length === PAGE_SIZE ? tweets[tweets.length - 1].created_at : null
+  return { tweets, nextCursor }
 }
 
 export async function getTweetById(tweetId: string, userId?: string) {
