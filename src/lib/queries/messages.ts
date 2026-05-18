@@ -33,7 +33,6 @@ export type MessageRow = {
 export async function getConversations(userId: string): Promise<ConversationItem[]> {
   const supabase = await createClient()
 
-  // 1. My participations + last_read_at
   const { data: myParts } = await supabase
     .from('conversation_participants')
     .select('conversation_id, last_read_at')
@@ -44,46 +43,46 @@ export async function getConversations(userId: string): Promise<ConversationItem
   const convIds = myParts.map((p) => p.conversation_id)
   const myReadAt = new Map(myParts.map((p) => [p.conversation_id, p.last_read_at]))
 
-  // 2. Conversations sorted by recency
   const { data: convs } = await supabase
     .from('conversations')
     .select('id, last_message_at')
     .in('id', convIds)
     .order('last_message_at', { ascending: false })
+    .limit(50)
 
   if (!convs || convs.length === 0) return []
 
-  // 3. Other participants' profiles (not me)
+  const activeConvIds = convs.map((c) => c.id)
+
   const { data: others } = await supabase
     .from('conversation_participants')
     .select('conversation_id, user_id, profiles!conversation_participants_user_id_fkey(id, username, display_name, avatar_url)')
-    .in('conversation_id', convIds)
+    .in('conversation_id', activeConvIds)
     .neq('user_id', userId)
 
-  const otherByConv = new Map<string, any>()
+  const otherByConv = new Map<string, unknown>()
   for (const o of others ?? []) otherByConv.set(o.conversation_id, o.profiles)
 
-  // 4. Latest messages across all conversations (pick first per convo in JS)
+  // Fetch one message per conversation using DISTINCT ON equivalent:
+  // get recent messages and take the first per conversation in JS (bounded by 50 convs)
   const { data: latestMsgs } = await supabase
     .from('messages')
     .select('conversation_id, content, sender_id, created_at')
-    .in('conversation_id', convIds)
+    .in('conversation_id', activeConvIds)
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
-    .limit(convIds.length * 5)
+    .limit(activeConvIds.length * 3)
 
-  const lastMsgByConv = new Map<string, any>()
+  const lastMsgByConv = new Map<string, { content: string; sender_id: string; created_at: string }>()
   for (const msg of latestMsgs ?? []) {
     if (!lastMsgByConv.has(msg.conversation_id)) lastMsgByConv.set(msg.conversation_id, msg)
   }
 
   return convs.map((conv) => {
-    const other = otherByConv.get(conv.id)
+    const other = otherByConv.get(conv.id) as { id: string; username: string; display_name: string | null; avatar_url: string | null } | null
     const lastMsg = lastMsgByConv.get(conv.id)
     const readAt = myReadAt.get(conv.id)
-    const hasUnread = !readAt
-      ? !!lastMsg
-      : !!(lastMsg && new Date(lastMsg.created_at) > new Date(readAt))
+    const hasUnread = !readAt ? !!lastMsg : !!(lastMsg && new Date(lastMsg.created_at) > new Date(readAt))
 
     return {
       id: conv.id,
@@ -105,7 +104,6 @@ export async function getConversations(userId: string): Promise<ConversationItem
 export async function getMessages(conversationId: string, userId: string): Promise<MessageRow[] | null> {
   const supabase = await createClient()
 
-  // Explicit membership check — defense in depth alongside RLS
   const { data: membership } = await supabase
     .from('conversation_participants')
     .select('user_id')
@@ -124,21 +122,27 @@ export async function getMessages(conversationId: string, userId: string): Promi
     .eq('conversation_id', conversationId)
     .is('deleted_at', null)
     .order('created_at', { ascending: true })
-    .limit(50)
+    .limit(100)
 
-  return (data ?? []).map((m: any) => ({
-    id: m.id,
-    conversationId: m.conversation_id,
-    senderId: m.sender_id,
-    content: m.content,
-    createdAt: m.created_at,
-    senderProfile: m.profiles
-      ? { username: m.profiles.username, displayName: m.profiles.display_name, avatarUrl: m.profiles.avatar_url }
-      : null,
-  }))
+  return ((data ?? []) as unknown[]).map((m: unknown) => {
+    const msg = m as { id: string; conversation_id: string; sender_id: string; content: string; created_at: string; profiles: { username: string; display_name: string | null; avatar_url: string | null } | null }
+    return {
+      id: msg.id,
+      conversationId: msg.conversation_id,
+      senderId: msg.sender_id,
+      content: msg.content,
+      createdAt: msg.created_at,
+      senderProfile: msg.profiles
+        ? { username: msg.profiles.username, displayName: msg.profiles.display_name, avatarUrl: msg.profiles.avatar_url }
+        : null,
+    }
+  })
 }
 
-export async function getConversationParticipants(conversationId: string, userId: string) {
+export async function getConversationParticipants(
+  conversationId: string,
+  _userId: string
+): Promise<ConversationParticipant[]> {
   const supabase = await createClient()
 
   const { data } = await supabase
@@ -146,23 +150,28 @@ export async function getConversationParticipants(conversationId: string, userId
     .select('user_id, profiles!conversation_participants_user_id_fkey(id, username, display_name, avatar_url)')
     .eq('conversation_id', conversationId)
 
-  return (data ?? []).map((p: any) => ({ userId: p.user_id, profile: p.profiles }))
+  return ((data ?? []) as unknown[]).map((p: unknown) => {
+    const row = p as { user_id: string; profiles: ParticipantProfile | null }
+    return { userId: row.user_id, profile: row.profiles ?? null }
+  })
 }
 
-export async function getUnreadDmCount(userId: string): Promise<number> {
+export async function getUnreadDmCount(_userId: string): Promise<number> {
   const supabase = await createClient()
+  // The RPC uses auth.uid() internally (no parameter) — prevents IDOR
+  const { data, error } = await supabase.rpc('get_unread_dm_count')
+  if (error) return 0
+  return (data as number) ?? 0
+}
 
-  const { data } = await supabase
-    .from('conversation_participants')
-    .select('conversation_id, last_read_at, conversations(last_message_at)')
-    .eq('user_id', userId)
+export type ParticipantProfile = {
+  id: string
+  username: string
+  display_name: string | null
+  avatar_url: string | null
+}
 
-  if (!data) return 0
-
-  return data.filter((p) => {
-    const conv = p.conversations as any
-    if (!conv?.last_message_at) return false
-    if (!p.last_read_at) return true
-    return new Date(conv.last_message_at) > new Date(p.last_read_at)
-  }).length
+export type ConversationParticipant = {
+  userId: string
+  profile: ParticipantProfile | null
 }

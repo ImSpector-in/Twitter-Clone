@@ -1,9 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
 
-export async function getNotifications(userId: string) {
+const PAGE_SIZE = 30
+
+export async function getNotifications(userId: string, cursor?: string) {
   const supabase = await createClient()
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('notifications')
     .select(`
       id,
@@ -19,8 +21,13 @@ export async function getNotifications(userId: string) {
     `)
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
-    .limit(50)
+    .limit(PAGE_SIZE)
 
+  if (cursor) {
+    query = query.lt('created_at', cursor)
+  }
+
+  const { data, error } = await query
   if (error) throw new Error(error.message)
   return data ?? []
 }

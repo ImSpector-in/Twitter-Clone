@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getNotificationSettings } from '@/lib/queries/settings'
 import { SettingsPage, SettingsRow } from '@/components/settings/SettingsSection'
 import NotificationToggles from '@/components/settings/NotificationToggles'
 
@@ -6,11 +7,7 @@ export default async function NotificationsSettingsPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('notify_likes, notify_replies, notify_follows')
-    .eq('id', user!.id)
-    .single()
+  const profile = await getNotificationSettings(user!.id)
 
   return (
     <SettingsPage title="Notifications" description="Choose which notifications you receive.">

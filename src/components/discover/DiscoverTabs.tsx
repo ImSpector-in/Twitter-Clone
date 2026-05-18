@@ -9,25 +9,33 @@ export default function DiscoverTabs({ currentUserId }: { currentUserId: string 
 
   return (
     <div>
-      <div className="flex border-b">
+      <div role="tablist" aria-label="Discover" className="flex border-b">
         <button
+          role="tab"
+          aria-selected={tab === 'people'}
+          aria-controls="discover-panel"
           onClick={() => setTab('people')}
           className={`flex-1 py-3 text-sm font-semibold transition-colors hover:bg-muted/50 ${tab === 'people' ? 'border-b-2 border-primary' : 'text-muted-foreground'}`}
         >
           People
         </button>
         <button
+          role="tab"
+          aria-selected={tab === 'tweets'}
+          aria-controls="discover-panel"
           onClick={() => setTab('tweets')}
           className={`flex-1 py-3 text-sm font-semibold transition-colors hover:bg-muted/50 ${tab === 'tweets' ? 'border-b-2 border-primary' : 'text-muted-foreground'}`}
         >
           Tweets
         </button>
       </div>
-      {tab === 'people' ? (
-        <UserSearch currentUserId={currentUserId} />
-      ) : (
-        <TweetSearch currentUserId={currentUserId} />
-      )}
+      <div id="discover-panel" role="tabpanel">
+        {tab === 'people' ? (
+          <UserSearch currentUserId={currentUserId} />
+        ) : (
+          <TweetSearch currentUserId={currentUserId} />
+        )}
+      </div>
     </div>
   )
 }

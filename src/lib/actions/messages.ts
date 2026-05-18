@@ -3,14 +3,11 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { BOT_IDS } from '@/lib/config/bots'
+import { PG_UNIQUE_VIOLATION, MESSAGE_MAX_LENGTH, MESSAGE_RATE_LIMIT_PER_HOUR, RATE_LIMIT_WINDOW_MS } from '@/lib/constants'
+import { isBlockedEitherDirection } from '@/lib/auth/blockCheck'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-
-const BOT_IDS = [
-  process.env.BOT_CTO_FANATIC_ID,
-  process.env.BOT_UX_CRITIC_ID,
-  process.env.BOT_BUILDINPUBLIC_ID,
-].filter(Boolean) as string[]
 
 export async function startConversation(otherUserId: string): Promise<void> {
   const supabase = await createClient()
@@ -27,14 +24,9 @@ export async function startConversation(otherUserId: string): Promise<void> {
   if (!UUID_RE.test(otherUserId)) throw new Error('User not found')
 
   // Block check — both directions (same generic error to avoid info leak)
-  const { data: block } = await supabase
-    .from('blocks')
-    .select('blocker_id')
-    .or(`and(blocker_id.eq.${user.id},blocked_id.eq.${otherUserId}),and(blocker_id.eq.${otherUserId},blocked_id.eq.${user.id})`)
-    .limit(1)
-    .maybeSingle()
-
-  if (block) throw new Error('Could not start conversation')
+  if (await isBlockedEitherDirection(supabase, user.id, otherUserId)) {
+    throw new Error('Could not start conversation')
+  }
 
   // Confirm target user exists
   const { data: target } = await supabase.from('profiles').select('id').eq('id', otherUserId).maybeSingle()
@@ -82,7 +74,7 @@ export async function sendMessage(
 
   const trimmed = content.trim()
   if (!trimmed) throw new Error('Message cannot be empty')
-  if (trimmed.length > 1000) throw new Error('Message too long (max 1000 characters)')
+  if (trimmed.length > MESSAGE_MAX_LENGTH) throw new Error(`Message too long (max ${MESSAGE_MAX_LENGTH} characters)`)
 
   // Explicit membership check — defense in depth alongside RLS
   const { data: membership } = await supabase
@@ -94,15 +86,14 @@ export async function sendMessage(
 
   if (!membership) throw new Error('Could not send message')
 
-  // Rate limit: 200 messages per hour per sender
-  const oneHourAgo = new Date(Date.now() - 3_600_000).toISOString()
+  const oneHourAgo = new Date(Date.now() - RATE_LIMIT_WINDOW_MS).toISOString()
   const { count } = await supabase
     .from('messages')
     .select('*', { count: 'exact', head: true })
     .eq('sender_id', user.id)
     .gte('created_at', oneHourAgo)
 
-  if ((count ?? 0) >= 200) throw new Error("You're sending too many messages. Please wait a while.")
+  if ((count ?? 0) >= MESSAGE_RATE_LIMIT_PER_HOUR) throw new Error("You're sending too many messages. Please wait a while.")
 
   // Insert using client-provided UUID so Realtime echo can be deduped
   const { error } = await supabase.from('messages').insert({
@@ -113,7 +104,7 @@ export async function sendMessage(
   })
 
   // Duplicate ID = already sent (optimistic race) — not an error
-  if (error && error.code !== '23505') throw new Error('Could not send message')
+  if (error && error.code !== PG_UNIQUE_VIOLATION) throw new Error('Could not send message')
 }
 
 export async function markConversationRead(conversationId: string): Promise<void> {

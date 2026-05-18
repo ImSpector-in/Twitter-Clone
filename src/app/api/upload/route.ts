@@ -36,6 +36,16 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  // Reject oversized uploads before buffering the body to avoid memory abuse
+  const HARD_MAX = 5 * 1024 * 1024
+  const contentLengthHeader = (request as Request).headers.get('content-length')
+  if (contentLengthHeader) {
+    const declared = Number(contentLengthHeader)
+    if (Number.isFinite(declared) && declared > HARD_MAX) {
+      return NextResponse.json({ error: `File too large (max ${HARD_MAX / 1024 / 1024}MB)` }, { status: 413 })
+    }
+  }
+
   const formData = await request.formData()
   const file = formData.get('file') as File | null
   const bucket = formData.get('bucket') as string | null

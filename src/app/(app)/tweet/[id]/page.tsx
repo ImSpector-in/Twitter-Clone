@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getTweetById, getReplies } from '@/lib/queries/tweets'
@@ -6,6 +7,8 @@ import TweetComposer from '@/components/tweet/TweetComposer'
 import TweetList from '@/components/tweet/TweetList'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
+
+export const metadata: Metadata = { title: 'Thread · Quotora' }
 
 type Props = {
   params: Promise<{ id: string }>
@@ -32,10 +35,8 @@ export default async function TweetThreadPage({ params }: Props) {
         <h2 className="text-xl font-bold">Thread</h2>
       </div>
 
-      {/* Original tweet */}
-      <TweetCard tweet={tweet as any} currentUserId={user?.id ?? ''} />
+      <TweetCard tweet={tweet} currentUserId={user?.id ?? ''} />
 
-      {/* Reply composer */}
       <div className="border-b px-4 py-3">
         <TweetComposer
           replyToId={id}
@@ -43,18 +44,11 @@ export default async function TweetThreadPage({ params }: Props) {
         />
       </div>
 
-      {/* Replies */}
-      {replies.length === 0 ? (
-        <div className="p-8 text-center text-muted-foreground text-sm">
-          No replies yet. Be the first to reply!
-        </div>
-      ) : (
-        <TweetList
-          tweets={replies as any}
-          currentUserId={user?.id ?? ''}
-          emptyMessage="No replies yet."
-        />
-      )}
+      <TweetList
+        tweets={replies}
+        currentUserId={user?.id ?? ''}
+        emptyMessage="No replies yet. Be the first to reply!"
+      />
     </div>
   )
 }

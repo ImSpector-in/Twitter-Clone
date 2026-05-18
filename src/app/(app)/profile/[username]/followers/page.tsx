@@ -2,7 +2,8 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { getProfileByUsername, getFollowers } from '@/lib/queries/profile'
+import { getProfileByUsername, getFollowers, getRelationshipStatus } from '@/lib/queries/profile'
+import { canViewProfile } from '@/lib/auth/permissions'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import FollowButton from '@/components/profile/FollowButton'
 
@@ -16,22 +17,23 @@ export default async function FollowersPage({ params }: Props) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Check if viewer can see this list
   const isOwnProfile = user?.id === profile.id
-  if (profile.is_private && !isOwnProfile) {
-    const { data: follow } = await supabase.from('follows').select('follower_id').eq('follower_id', user!.id).eq('following_id', profile.id).single()
-    if (!follow) return (
-      <div className="p-8 text-center text-muted-foreground text-sm">
-        This account is private.
-      </div>
-    )
+  let isFollowing = false
+
+  if (!isOwnProfile && profile.is_private) {
+    const rel = await getRelationshipStatus(user!.id, profile.id)
+    isFollowing = rel.isFollowing
   }
 
-  const followers = await getFollowers(profile.id)
+  if (!canViewProfile(profile, user!.id, isOwnProfile || isFollowing)) {
+    return <div className="p-8 text-center text-muted-foreground text-sm">This account is private.</div>
+  }
 
-  // Get who current user already follows
-  const { data: myFollows } = await supabase.from('follows').select('following_id').eq('follower_id', user!.id)
-  const followingSet = new Set(myFollows?.map((f) => f.following_id) ?? [])
+  const [followers, myFollowsResult] = await Promise.all([
+    getFollowers(profile.id),
+    supabase.from('follows').select('following_id').eq('follower_id', user!.id),
+  ])
+  const followingSet = new Set(myFollowsResult.data?.map((f) => f.following_id) ?? [])
 
   return (
     <div>
@@ -48,7 +50,7 @@ export default async function FollowersPage({ params }: Props) {
         <div className="p-8 text-center text-muted-foreground text-sm">No followers yet.</div>
       ) : (
         <ul>
-          {followers.map((f: any) => {
+          {(followers as unknown as Array<{ id: string; username: string; display_name: string | null; avatar_url: string | null }>).map((f) => {
             const displayName = f.display_name || f.username
             return (
               <li key={f.id} className="flex items-center justify-between border-b px-4 py-3 hover:bg-muted/30 transition-colors">

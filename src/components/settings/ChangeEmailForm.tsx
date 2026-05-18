@@ -32,7 +32,7 @@ export default function ChangeEmailForm({ currentEmail }: { currentEmail: string
           <p className="font-medium text-sm">Email</p>
           <p className="text-muted-foreground text-sm">{currentEmail}</p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setOpen((v) => !v)}>
+        <Button variant="outline" size="sm" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
           {open ? 'Cancel' : 'Change'}
         </Button>
       </div>

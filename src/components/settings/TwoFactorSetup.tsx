@@ -93,7 +93,7 @@ export default function TwoFactorSetup({ isEnabled }: { isEnabled: boolean }) {
     return (
       <div className="space-y-2">
         <p className="font-medium text-sm">Two-factor authentication</p>
-        <p className="text-sm text-green-600 dark:text-green-400">✓ Enabled successfully. Your account is now protected.</p>
+        <p className="text-sm text-green-600 dark:text-green-400"><span aria-hidden="true">✓</span> Enabled successfully. Your account is now protected.</p>
         <Button variant="outline" size="sm" onClick={handleDisable} disabled={loading}>
           {loading ? 'Disabling...' : 'Disable 2FA'}
         </Button>

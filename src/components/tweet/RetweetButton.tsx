@@ -55,6 +55,8 @@ export default function RetweetButton({ tweetId, initialRetweeted, initialCount,
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
+            aria-label={retweeted ? `Undo repost (${count})` : `Repost (${count})`}
+            aria-pressed={retweeted}
             className={`flex items-center gap-1 text-xs transition-colors group-hover:text-green-500 tabular-nums ${retweeted ? 'text-green-500' : 'text-muted-foreground'}`}
           >
             <Repeat2 className="h-4 w-4" />

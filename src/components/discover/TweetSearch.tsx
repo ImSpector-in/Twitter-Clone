@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Input } from '@/components/ui/input'
 import { formatDistanceToNow } from 'date-fns'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -14,42 +14,51 @@ type Tweet = {
   profiles: { username: string; display_name: string | null; avatar_url: string | null } | null
 }
 
-export default function TweetSearch({ currentUserId }: { currentUserId: string }) {
+export default function TweetSearch({ currentUserId: _currentUserId }: { currentUserId: string }) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<Tweet[]>([])
   const [loading, setLoading] = useState(false)
   const [searched, setSearched] = useState(false)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  async function handleSearch(value: string) {
-    setQuery(value)
-    if (value.trim().length < 2) {
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+
+    if (query.trim().length < 2) {
       setResults([])
       setSearched(false)
       return
     }
 
-    setLoading(true)
-    // Q-010: Server-side search with block/mute exclusions
-    const data = await searchTweets(value.trim())
-    setResults(data)
-    setSearched(true)
-    setLoading(false)
-  }
+    debounceRef.current = setTimeout(async () => {
+      setLoading(true)
+      // Q-010: Server-side search with block/mute exclusions
+      const data = await searchTweets(query.trim())
+      setResults(data)
+      setSearched(true)
+      setLoading(false)
+    }, 300)
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
+  }, [query])
 
   return (
     <div className="p-4 space-y-4">
       <Input
         placeholder="Search tweets..."
         value={query}
-        onChange={(e) => handleSearch(e.target.value)}
+        onChange={(e) => setQuery(e.target.value)}
         autoFocus
+        aria-label="Search tweets"
       />
       {loading && <p className="text-sm text-muted-foreground">Searching...</p>}
       {searched && results.length === 0 && !loading && (
         <p className="text-sm text-muted-foreground">No tweets found for &quot;{query}&quot;</p>
       )}
       {results.length > 0 && (
-        <ul className="space-y-1">
+        <ul className="space-y-1" aria-label="Tweet search results">
           {results.map((tweet) => {
             const profile = tweet.profiles
             const displayName = profile?.display_name || profile?.username || 'Unknown'

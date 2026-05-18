@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { PG_UNIQUE_VIOLATION, SUPABASE_STORAGE_URL } from '@/lib/constants'
 
 export async function updateProfile(formData: FormData) {
   const supabase = await createClient()
@@ -31,7 +32,7 @@ export async function updateProfile(formData: FormData) {
     .eq('id', user.id)
 
   if (error) {
-    if (error.code === '23505') throw new Error('That username is already taken')
+    if (error.code === PG_UNIQUE_VIOLATION) throw new Error('That username is already taken')
     throw new Error(error.message)
   }
 
@@ -40,7 +41,7 @@ export async function updateProfile(formData: FormData) {
 }
 
 export async function updateAvatarUrl(avatarUrl: string) {
-  if (!avatarUrl.startsWith('https://ujohfqnxtmoraufztjob.supabase.co/storage/v1/object/public/avatars/')) {
+  if (!avatarUrl.startsWith(`${SUPABASE_STORAGE_URL}/avatars/`)) {
     throw new Error('Invalid avatar URL')
   }
 

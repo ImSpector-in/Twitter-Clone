@@ -4,8 +4,19 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { scanUrls } from '@/lib/utils/safeBrowsing'
+import { requireUser } from '@/lib/auth/requireUser'
+import { isBlockedEitherDirection } from '@/lib/auth/blockCheck'
+import {
+  TWEET_MAX_LENGTH,
+  TWEET_RATE_LIMIT_PER_HOUR,
+  ACCOUNT_AGE_MIN_MS,
+  RATE_LIMIT_WINDOW_MS,
+  SUPABASE_STORAGE_URL,
+  REPLY_SCOPES,
+  type ReplyScope,
+} from '@/lib/constants'
 
-const SUPABASE_STORAGE_PREFIX = 'https://ujohfqnxtmoraufztjob.supabase.co/storage/v1/object/public/'
+const SUPABASE_STORAGE_PREFIX = `${SUPABASE_STORAGE_URL}/`
 
 const URL_REGEX = /https?:\/\/[^\s<>"']+/g
 
@@ -23,12 +34,11 @@ function validateGifUrl(url: string | undefined): string | null {
   return url
 }
 
-const VALID_REPLY_SCOPES = ['everyone', 'followers', 'nobody']
 
 function validateContent(content: string): string {
   const trimmed = content?.trim() ?? ''
   if (!trimmed) throw new Error('Tweet cannot be empty')
-  if (trimmed.length > 280) throw new Error('Tweet cannot exceed 280 characters')
+  if (trimmed.length > TWEET_MAX_LENGTH) throw new Error(`Tweet cannot exceed ${TWEET_MAX_LENGTH} characters`)
   return trimmed
 }
 
@@ -46,21 +56,19 @@ function hasIpHost(url: string): boolean {
 }
 
 export async function createTweet(content: string, replyToId?: string, imageUrl?: string, replyScope?: string, gifUrl?: string): Promise<void> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Not authenticated')
+  const { user, supabase } = await requireUser()
 
   const validatedContent = validateContent(content)
   const validatedImageUrl = validateImageUrl(imageUrl)
   const validatedGifUrl = validateGifUrl(gifUrl)
-  const validatedScope = VALID_REPLY_SCOPES.includes(replyScope ?? '') ? replyScope : 'everyone'
+  const validatedScope = REPLY_SCOPES.includes((replyScope ?? '') as ReplyScope) ? replyScope : 'everyone'
 
   // Link-specific validations
   const urls = extractUrls(validatedContent)
   if (urls.length > 0) {
     // Block links from brand-new accounts (biggest driver of spam/phishing)
     const accountAge = Date.now() - new Date(user.created_at).getTime()
-    if (accountAge < 60 * 60 * 1000) {
+    if (accountAge < ACCOUNT_AGE_MIN_MS) {
       throw new Error('New accounts must wait 1 hour before posting links.')
     }
 
@@ -71,13 +79,13 @@ export async function createTweet(content: string, replyToId?: string, imageUrl?
   }
 
   // Q-020: DB-based rate limit — max 30 tweets per hour
-  const oneHourAgo = new Date(Date.now() - 3_600_000).toISOString()
+  const oneHourAgo = new Date(Date.now() - RATE_LIMIT_WINDOW_MS).toISOString()
   const { count } = await supabase
     .from('tweets')
     .select('*', { count: 'exact', head: true })
     .eq('user_id', user.id)
     .gte('created_at', oneHourAgo)
-  if ((count ?? 0) >= 30) throw new Error('You\'re posting too fast. Please wait a while.')
+  if ((count ?? 0) >= TWEET_RATE_LIMIT_PER_HOUR) throw new Error('You\'re posting too fast. Please wait a while.')
 
   // Validate replyToId is a UUID if provided
   if (replyToId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(replyToId)) {
@@ -153,7 +161,8 @@ export async function createTweet(content: string, replyToId?: string, imageUrl?
 
         const authorUsername = authorProfile?.username?.toLowerCase()
 
-        const mentionedUsernames = uniqueUsernames.filter(u => u !== authorUsername)
+        // Cap at 10 mentions per tweet to prevent notification spam
+        const mentionedUsernames = uniqueUsernames.filter(u => u !== authorUsername).slice(0, 10)
 
         if (mentionedUsernames.length > 0) {
           // Resolve usernames to profile ids

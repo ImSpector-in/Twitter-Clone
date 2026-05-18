@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
 
+const isDev = process.env.NODE_ENV === 'development'
+
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
@@ -28,14 +30,18 @@ const nextConfig: NextConfig = {
         headers: [
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
-          { key: 'Referrer-Policy', value: 'same-origin' },
+          // strict-origin-when-cross-origin avoids leaking full URL to third-party sites
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
           {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
               "img-src 'self' https://ujohfqnxtmoraufztjob.supabase.co https://api.dicebear.com https://*.giphy.com data: blob:",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              // unsafe-inline is required by Next.js for its inline runtime scripts.
+              // unsafe-eval is only needed in development (hot reload, source maps).
+              // TODO: replace unsafe-inline with nonces for full XSS protection.
+              `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
               "style-src 'self' 'unsafe-inline'",
               "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.groq.com https://api.giphy.com",
               "font-src 'self' data:",

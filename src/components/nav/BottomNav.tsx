@@ -27,7 +27,8 @@ export default function BottomNav({ username }: Props) {
             key={href}
             href={href}
             aria-label={label}
-            className={`flex-1 flex items-center justify-center py-3 transition-colors hover:bg-muted ${active ? 'text-primary' : 'text-muted-foreground'}`}
+            aria-current={active ? 'page' : undefined}
+            className={`flex-1 flex items-center justify-center py-4 min-h-[44px] transition-colors hover:bg-muted ${active ? 'text-primary' : 'text-muted-foreground'}`}
           >
             <Icon className={`h-6 w-6 ${active ? 'stroke-[2.5px]' : ''}`} />
           </Link>

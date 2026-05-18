@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -21,60 +21,68 @@ export default function UserSearch({ currentUserId }: { currentUserId: string })
   const [results, setResults] = useState<Profile[]>([])
   const [loading, setLoading] = useState(false)
   const [searched, setSearched] = useState(false)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  async function handleSearch(value: string) {
-    setQuery(value)
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
 
-    if (value.trim().length < 1) {
+    if (query.trim().length < 1) {
       setResults([])
       setSearched(false)
       return
     }
 
-    setLoading(true)
-    const supabase = createClient()
+    debounceRef.current = setTimeout(async () => {
+      setLoading(true)
+      const supabase = createClient()
 
-    // Q-009: Sanitize search value — strip PostgREST filter metacharacters
-    const sanitized = value.trim().replace(/[,.:()]/g, '')
+      // Q-009: Sanitize search value — strip PostgREST filter metacharacters
+      const sanitized = query.trim().replace(/[,.:()]/g, '')
 
-    const [profilesResult, followsResult] = await Promise.all([
-      supabase
-        .from('profiles')
-        .select('id, username, display_name, avatar_url, bio')
-        .or(`username.ilike.%${sanitized}%,display_name.ilike.%${sanitized}%`)
-        .neq('id', currentUserId)
-        .limit(10),
-      supabase
-        .from('follows')
-        .select('following_id')
-        .eq('follower_id', currentUserId),
-    ])
+      const [profilesResult, followsResult] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('id, username, display_name, avatar_url, bio')
+          .or(`username.ilike.%${sanitized}%,display_name.ilike.%${sanitized}%`)
+          .neq('id', currentUserId)
+          .limit(10),
+        supabase
+          .from('follows')
+          .select('following_id')
+          .eq('follower_id', currentUserId),
+      ])
 
-    const followingIds = new Set(followsResult.data?.map((f) => f.following_id) ?? [])
-    const profiles = (profilesResult.data ?? []).map((p) => ({
-      ...p,
-      isFollowing: followingIds.has(p.id),
-    }))
+      const followingIds = new Set(followsResult.data?.map((f) => f.following_id) ?? [])
+      const profiles = (profilesResult.data ?? []).map((p) => ({
+        ...p,
+        isFollowing: followingIds.has(p.id),
+      }))
 
-    setResults(profiles)
-    setSearched(true)
-    setLoading(false)
-  }
+      setResults(profiles)
+      setSearched(true)
+      setLoading(false)
+    }, 300)
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
+  }, [query, currentUserId])
 
   return (
     <div className="p-4 space-y-4">
       <Input
         placeholder="Search by username..."
         value={query}
-        onChange={(e) => handleSearch(e.target.value)}
+        onChange={(e) => setQuery(e.target.value)}
         autoFocus
+        aria-label="Search users"
       />
       {loading && <p className="text-sm text-muted-foreground">Searching...</p>}
       {searched && results.length === 0 && !loading && (
         <p className="text-sm text-muted-foreground">No users found for &quot;{query}&quot;</p>
       )}
       {results.length > 0 && (
-        <ul className="space-y-1">
+        <ul className="space-y-1" aria-label="Search results">
           {results.map((profile) => {
             const displayName = profile.display_name || profile.username
             const initials = displayName.slice(0, 2).toUpperCase()

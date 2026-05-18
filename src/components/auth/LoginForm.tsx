@@ -47,12 +47,13 @@ export default function LoginForm() {
     return (
       <form onSubmit={handleMFAVerify} className="space-y-4">
         <p className="text-center text-sm text-gray-500">Enter the 6-digit code from your authenticator app.</p>
-        <input type="text" inputMode="numeric" value={mfaCode}
+        <label htmlFor="mfa-code" className="sr-only">Authentication code</label>
+        <input id="mfa-code" type="text" inputMode="numeric" value={mfaCode}
           onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ''))}
           placeholder="000000" maxLength={6} autoFocus required
           className={`${inputClass} text-center text-xl tracking-[0.5em] pl-5`}
         />
-        {error && <p className="text-sm text-red-500 text-center">{error}</p>}
+        {error && <p role="alert" className="text-sm text-red-500 text-center">{error}</p>}
         <button type="submit" disabled={loading || mfaCode.length !== 6}
           className="w-full h-14 rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold text-base hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50">
           {loading ? 'Verifying...' : 'Verify'}
@@ -64,25 +65,28 @@ export default function LoginForm() {
 
   return (
     <form onSubmit={handleLogin} className="space-y-3">
-      {/* Email — orange icon */}
+      {/* Email */}
       <div className="relative">
-        <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-orange-400 pointer-events-none" />
-        <input type="email" placeholder="Username or email" value={email}
+        <label htmlFor="login-email" className="sr-only">Email address</label>
+        <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-orange-400 pointer-events-none" aria-hidden="true" />
+        <input id="login-email" type="email" placeholder="Username or email" value={email}
           onChange={(e) => setEmail(e.target.value)} required
           className={`${inputClass} pl-12 pr-5`}
         />
       </div>
 
-      {/* Password — orange icon */}
+      {/* Password */}
       <div className="relative">
-        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-orange-400 pointer-events-none" />
-        <input type={showPassword ? 'text' : 'password'} placeholder="Password"
+        <label htmlFor="login-password" className="sr-only">Password</label>
+        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-orange-400 pointer-events-none" aria-hidden="true" />
+        <input id="login-password" type={showPassword ? 'text' : 'password'} placeholder="Password"
           value={password} onChange={(e) => setPassword(e.target.value)} required
           className={`${inputClass} pl-12 pr-12`}
         />
         <button type="button" onClick={() => setShowPassword(p => !p)}
+          aria-label={showPassword ? 'Hide password' : 'Show password'}
           className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
-          {showPassword ? <Eye className="h-5 w-5" /> : <EyeOff className="h-5 w-5" />}
+          {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
         </button>
       </div>
 
@@ -93,7 +97,7 @@ export default function LoginForm() {
         </Link>
       </div>
 
-      {error && <p className="text-sm text-red-500 text-center">{error}</p>}
+      {error && <p role="alert" className="text-sm text-red-500 text-center">{error}</p>}
 
       <button type="submit" disabled={loading}
         className="w-full h-14 rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold text-lg hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50">

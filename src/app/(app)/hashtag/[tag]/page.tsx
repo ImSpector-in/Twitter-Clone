@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getTweetsByHashtag } from '@/lib/queries/tweets'
@@ -6,6 +7,11 @@ import { Hash } from 'lucide-react'
 
 type Props = {
   params: Promise<{ tag: string }>
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const tag = (await params).tag.replace(/[^\w]/g, '').toLowerCase()
+  return { title: `#${tag} · Quotora` }
 }
 
 export default async function HashtagPage({ params }: Props) {
@@ -31,9 +37,10 @@ export default async function HashtagPage({ params }: Props) {
       </div>
 
       <TweetList
-        tweets={tweets as any}
+        tweets={tweets}
         currentUserId={user?.id ?? ''}
         emptyMessage={`No tweets with #${tag} yet.`}
+        emptyAction={{ label: 'Go to home feed', href: '/home' }}
       />
     </div>
   )

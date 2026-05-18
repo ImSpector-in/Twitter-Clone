@@ -30,10 +30,12 @@ export default function LikeButton({ tweetId, initialLiked, initialCount }: Prop
   return (
     <button
       onClick={handleClick}
+      aria-label={liked ? `Unlike (${count})` : `Like (${count})`}
+      aria-pressed={liked}
       className={`flex items-center gap-1 text-xs transition-colors group-hover:text-rose-500 tabular-nums ${liked ? 'text-rose-500' : 'text-muted-foreground'}`}
     >
       <Heart className={`h-4 w-4 ${liked ? 'fill-rose-500' : ''}`} />
-      {count > 0 && <span>{count}</span>}
+      {count > 0 && <span aria-hidden="true">{count}</span>}
     </button>
   )
 }

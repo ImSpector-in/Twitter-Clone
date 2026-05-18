@@ -1,29 +1,17 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { attachLikedBy } from '@/lib/queries/tweets'
+import { getBookmarkedTweets } from '@/lib/queries/tweets'
 import TweetList from '@/components/tweet/TweetList'
+
+export const metadata: Metadata = { title: 'Bookmarks · Quotora' }
 
 export default async function BookmarksPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const { data } = await supabase
-    .from('bookmarks')
-    .select(`
-      tweets (
-        id, content, created_at, user_id, reply_to_id, retweet_of_id, image_url,
-        profiles!tweets_user_id_fkey (username, display_name, avatar_url),
-        likes (count),
-        replies:tweets!reply_to_id (count),
-        retweets:tweets!retweet_of_id (count)
-      )
-    `)
-    .eq('user_id', user!.id)
-    .order('created_at', { ascending: false })
-
-  const rawTweets = data?.map((b: any) => b.tweets).filter(Boolean) ?? []
-  const tweets = await attachLikedBy(rawTweets, user!.id)
+  const tweets = await getBookmarkedTweets(user!.id)
 
   return (
     <div>
@@ -37,9 +25,10 @@ export default async function BookmarksPage() {
         </div>
       </div>
       <TweetList
-        tweets={tweets as any}
+        tweets={tweets}
         currentUserId={user!.id}
-        emptyMessage="No bookmarks yet. Tap the bookmark icon on any tweet to save it."
+        emptyMessage="No bookmarks yet."
+        emptyAction={{ label: 'Explore tweets to bookmark', href: '/home' }}
       />
     </div>
   )

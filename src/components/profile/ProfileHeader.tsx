@@ -42,12 +42,12 @@ export default function ProfileHeader({ profile, followers, following, isOwnProf
             <AvatarFallback className="text-2xl bg-gradient-to-br from-primary to-cyan-400 text-white">{initials}</AvatarFallback>
           </Avatar>
           {isOwnProfile ? (
-            <a
+            <Link
               href="/profile/edit"
               className="text-sm border border-primary/30 rounded-full px-4 py-1.5 font-semibold hover:bg-primary/10 hover:border-primary transition-colors text-primary"
             >
               Edit profile
-            </a>
+            </Link>
           ) : (
             <div className="flex items-center gap-2">
               {messageButton}

@@ -52,7 +52,9 @@ export default function TopNav({ username, displayName, avatarUrl, onLogoClick }
           <form onSubmit={handleSearch} className="flex-1 max-w-xl">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <label htmlFor="topnav-search" className="sr-only">Search Quotora</label>
               <input
+                id="topnav-search"
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}

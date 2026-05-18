@@ -31,7 +31,7 @@ export default function ChangePasswordForm() {
           <p className="font-medium text-sm">Password</p>
           <p className="text-muted-foreground text-sm">Change your account password.</p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setOpen((v) => !v)}>
+        <Button variant="outline" size="sm" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
           {open ? 'Cancel' : 'Change'}
         </Button>
       </div>

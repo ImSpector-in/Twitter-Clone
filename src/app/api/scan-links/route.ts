@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { promises as dns } from 'dns'
 import { createClient } from '@/lib/supabase/server'
 
 const URL_REGEX = /https?:\/\/[^\s<>"']+/g
@@ -8,13 +9,35 @@ const SHORTENER_HOSTS = new Set([
   'buff.ly', 'ift.tt', 'youtu.be', 'short.io', 'rb.gy', 'cutt.ly',
 ])
 
-// Q-030: block SSRF targets that redirect to internal/private addresses
-const PRIVATE_IP_RE = /^(127\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.|fc|fd)/i
+const PRIVATE_IPV4_RE = /^(127\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.|100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.|0\.)/i
 
-function isPrivateHost(urlStr: string): boolean {
+const METADATA_HOSTS = new Set([
+  'metadata.google.internal',
+  'metadata.google',
+  'metadata.aws.internal',
+  'metadata.internal',
+  '100.100.100.200',
+])
+
+function isPrivateIp(ip: string): boolean {
+  if (ip === '127.0.0.1' || ip === '::1' || ip === '0.0.0.0') return true
+  if (METADATA_HOSTS.has(ip)) return true
+  if (PRIVATE_IPV4_RE.test(ip)) return true
+  if (ip.includes(':')) {
+    const lc = ip.toLowerCase()
+    if (lc.startsWith('fc') || lc.startsWith('fd') || lc.startsWith('fe80')) return true
+  }
+  return false
+}
+
+async function isPrivateHost(urlStr: string): Promise<boolean> {
+  let hostname: string
+  try { hostname = new URL(urlStr).hostname } catch { return true }
+  if (!hostname || hostname === 'localhost') return true
+  if (METADATA_HOSTS.has(hostname.toLowerCase())) return true
   try {
-    const { hostname } = new URL(urlStr)
-    return hostname === 'localhost' || hostname === '::1' || PRIVATE_IP_RE.test(hostname)
+    const { address } = await dns.lookup(hostname, { family: 4 })
+    return isPrivateIp(address)
   } catch {
     return true
   }
@@ -24,14 +47,22 @@ async function expandUrl(url: string): Promise<string> {
   try {
     const hostname = new URL(url).hostname
     if (!SHORTENER_HOSTS.has(hostname)) return url
-    const res = await fetch(url, {
-      method: 'HEAD',
-      redirect: 'follow',
-      signal: AbortSignal.timeout(4000),
-    })
-    const expanded = res.url
-    if (isPrivateHost(expanded)) return url
-    return expanded
+    let current = url
+    for (let i = 0; i < 5; i++) {
+      const res = await fetch(current, { method: 'HEAD', redirect: 'manual', signal: AbortSignal.timeout(4000) })
+      if (res.status >= 300 && res.status < 400) {
+        const location = res.headers.get('location')
+        if (!location) break
+        let next: string
+        try { next = new URL(location, current).toString() } catch { break }
+        if (await isPrivateHost(next)) return url
+        current = next
+        continue
+      }
+      break
+    }
+    if (await isPrivateHost(current)) return url
+    return current
   } catch {
     return url
   }
@@ -40,10 +71,9 @@ async function expandUrl(url: string): Promise<string> {
 async function checkSafeBrowsing(urls: string[]): Promise<boolean> {
   const apiKey = process.env.GOOGLE_SAFE_BROWSING_API_KEY
   if (!apiKey) return false
-
   try {
     const res = await fetch(
-      `https://safebrowsingapis.googleapis.com/v4/threatMatches:find?key=${apiKey}`,
+      `https://safebrowsing.googleapis.com/v4/threatMatches:find?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -62,16 +92,12 @@ async function checkSafeBrowsing(urls: string[]): Promise<boolean> {
     if (!res.ok) return false
     const data = await res.json()
     return !!(data.matches?.length)
-  } catch {
-    return false
-  }
+  } catch { return false }
 }
 
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient()
-
-    // Verify the caller is authenticated
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -80,13 +106,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing tweetId' }, { status: 400 })
     }
 
-    // Fetch the tweet — must belong to this user
     const { data: tweet } = await supabase
-      .from('tweets')
-      .select('id, content, user_id')
-      .eq('id', tweetId)
-      .eq('user_id', user.id)
-      .single()
+      .from('tweets').select('id, content, user_id')
+      .eq('id', tweetId).eq('user_id', user.id).single()
 
     if (!tweet) return NextResponse.json({ error: 'Tweet not found' }, { status: 404 })
 
@@ -96,15 +118,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: 'clean' })
     }
 
-    // Expand shorteners so Safe Browsing sees the real destination
     const expandedUrls = await Promise.all(rawUrls.map(expandUrl))
     const uniqueUrls = [...new Set(expandedUrls)]
-
     const flagged = await checkSafeBrowsing(uniqueUrls)
     const status = flagged ? 'flagged' : 'clean'
-
     await supabase.from('tweets').update({ link_status: status }).eq('id', tweetId)
-
     return NextResponse.json({ status })
   } catch {
     return NextResponse.json({ error: 'Scan failed' }, { status: 500 })

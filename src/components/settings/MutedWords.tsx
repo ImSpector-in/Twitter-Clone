@@ -57,8 +57,13 @@ export default function MutedWords({ initialWords }: { initialWords: Word[] }) {
           {words.map((w) => (
             <span key={w.id} className="flex items-center gap-1 bg-muted text-sm px-2.5 py-1 rounded-full">
               {w.word}
-              <button onClick={() => handleRemove(w.id, w.word)} className="hover:text-destructive transition-colors">
-                <X className="h-3 w-3" />
+              <button
+                type="button"
+                onClick={() => handleRemove(w.id, w.word)}
+                aria-label={`Remove muted word: ${w.word}`}
+                className="hover:text-destructive transition-colors"
+              >
+                <X className="h-3 w-3" aria-hidden="true" />
               </button>
             </span>
           ))}

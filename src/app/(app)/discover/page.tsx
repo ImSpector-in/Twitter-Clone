@@ -1,7 +1,10 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import DiscoverTabs from '@/components/discover/DiscoverTabs'
+
+export const metadata: Metadata = { title: 'Discover · Quotora' }
 
 export default async function DiscoverPage() {
   const supabase = await createClient()

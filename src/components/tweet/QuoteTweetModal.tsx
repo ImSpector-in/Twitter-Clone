@@ -6,6 +6,8 @@ import { formatDistanceToNow } from 'date-fns'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { quoteTweet } from '@/lib/actions/retweets'
+import { getUserGradient } from '@/lib/utils/avatar'
+import { TWEET_MAX_LENGTH } from '@/lib/constants'
 
 type QuotedTweet = {
   id: string
@@ -24,22 +26,6 @@ type Props = {
   tweet: QuotedTweet
 }
 
-const GRADIENTS = [
-  'from-teal-400 to-cyan-600',
-  'from-pink-400 to-rose-600',
-  'from-violet-400 to-purple-600',
-  'from-amber-400 to-orange-600',
-  'from-emerald-400 to-green-600',
-  'from-blue-400 to-indigo-600',
-  'from-fuchsia-400 to-pink-600',
-]
-
-function getUserGradient(username: string) {
-  let hash = 0
-  for (let i = 0; i < username.length; i++) hash = username.charCodeAt(i) + ((hash << 5) - hash)
-  return GRADIENTS[Math.abs(hash) % GRADIENTS.length]
-}
-
 export default function QuoteTweetModal({ open, onClose, tweet }: Props) {
   const [content, setContent] = useState('')
   const [posting, setPosting] = useState(false)
@@ -49,7 +35,7 @@ export default function QuoteTweetModal({ open, onClose, tweet }: Props) {
   const username = profile?.username || 'unknown'
   const gradient = getUserGradient(username)
   const initials = displayName.slice(0, 2).toUpperCase()
-  const remaining = 280 - content.length
+  const remaining = TWEET_MAX_LENGTH - content.length
 
   async function handlePost() {
     if (!content.trim()) return
@@ -59,8 +45,8 @@ export default function QuoteTweetModal({ open, onClose, tweet }: Props) {
       setContent('')
       onClose()
       toast.success('Quote posted!')
-    } catch (e: any) {
-      toast.error(e.message ?? 'Failed to post quote.')
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Failed to post quote.')
     }
     setPosting(false)
   }
@@ -73,18 +59,16 @@ export default function QuoteTweetModal({ open, onClose, tweet }: Props) {
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
-          {/* Compose area */}
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="Add a comment..."
-            maxLength={280}
+            maxLength={TWEET_MAX_LENGTH}
             rows={3}
             autoFocus
             className="w-full bg-transparent text-sm resize-none focus:outline-none placeholder:text-muted-foreground"
           />
 
-          {/* Embedded quoted tweet */}
           <div className="rounded-xl border border-border p-3 flex flex-col gap-2">
             <div className="flex items-center gap-2">
               <Avatar className="h-6 w-6">
@@ -107,7 +91,6 @@ export default function QuoteTweetModal({ open, onClose, tweet }: Props) {
             </p>
           </div>
 
-          {/* Footer */}
           <div className="flex items-center justify-between">
             <span className={`text-xs tabular-nums ${remaining < 20 ? 'text-destructive' : 'text-muted-foreground'}`}>
               {remaining}

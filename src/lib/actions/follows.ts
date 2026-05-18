@@ -1,25 +1,21 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { requireUser } from '@/lib/auth/requireUser'
+import { isBlockedEitherDirection } from '@/lib/auth/blockCheck'
 import { createClient } from '@/lib/supabase/server'
+import { PG_UNIQUE_VIOLATION } from '@/lib/constants'
 
 export async function toggleFollow(targetUserId: string, targetUsername: string) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Not authenticated')
+  const { user, supabase } = await requireUser()
 
   // Q-016: Prevent self-follow
   if (targetUserId === user.id) throw new Error('Cannot follow yourself')
 
   // Q-007: Block check in either direction
-  const { data: block } = await supabase
-    .from('blocks')
-    .select('blocker_id')
-    .or(`and(blocker_id.eq.${user.id},blocked_id.eq.${targetUserId}),and(blocker_id.eq.${targetUserId},blocked_id.eq.${user.id})`)
-    .limit(1)
-    .single()
-
-  if (block) throw new Error('Cannot follow this user')
+  if (await isBlockedEitherDirection(supabase, user.id, targetUserId)) {
+    throw new Error('Cannot follow this user')
+  }
 
   const { data: existing } = await supabase
     .from('follows')
@@ -39,13 +35,14 @@ export async function toggleFollow(targetUserId: string, targetUsername: string)
       .from('follows')
       .insert({ follower_id: user.id, following_id: targetUserId })
     // Q-017: Ignore duplicate key errors (race condition)
-    if (error && error.code !== '23505') throw new Error(error.message)
+    if (error && error.code !== PG_UNIQUE_VIOLATION) throw new Error(error.message)
   }
 
   revalidatePath(`/profile/${targetUsername}`)
   revalidatePath('/home')
 }
 
+// getUserRelationship returns defaults when unauthenticated — can't use requireUser
 export async function getUserRelationship(targetUserId: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

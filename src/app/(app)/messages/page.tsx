@@ -1,8 +1,11 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowLeft, MessageSquare } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { getConversations } from '@/lib/queries/messages'
 import ConversationList from '@/components/messages/ConversationList'
+
+export const metadata: Metadata = { title: 'Messages · Quotora' }
 
 export default async function MessagesPage() {
   const supabase = await createClient()

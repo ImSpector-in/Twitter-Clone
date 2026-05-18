@@ -14,14 +14,19 @@ export default function ShareButton({ tweetId }: { tweetId: string }) {
         // user cancelled — ignore
       }
     } else {
-      await navigator.clipboard.writeText(url)
-      toast.success('Link copied to clipboard')
+      try {
+        await navigator.clipboard.writeText(url)
+        toast.success('Link copied to clipboard')
+      } catch {
+        toast.error('Could not copy link. Try copying the URL manually.')
+      }
     }
   }
 
   return (
     <button
       onClick={handleShare}
+      aria-label="Share"
       className="flex items-center gap-1 text-xs text-muted-foreground group-hover:text-blue-400 transition-colors"
     >
       <Share2 className="h-4 w-4" />

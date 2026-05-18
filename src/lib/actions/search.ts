@@ -2,15 +2,21 @@
 
 import { createClient } from '@/lib/supabase/server'
 
+export type SearchedTweet = {
+  id: string
+  content: string
+  created_at: string
+  profiles: { username: string; display_name: string | null; avatar_url: string | null } | null
+}
+
 // Q-010: Server-side tweet search with block/mute exclusions
-export async function searchTweets(query: string) {
+export async function searchTweets(query: string): Promise<SearchedTweet[]> {
   if (!query || query.trim().length < 2) return []
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return []
 
-  // Get excluded user IDs (blocks + mutes)
   const [blocksBy, blocksOf, mutes] = await Promise.all([
     supabase.from('blocks').select('blocked_id').eq('blocker_id', user.id),
     supabase.from('blocks').select('blocker_id').eq('blocked_id', user.id),
@@ -23,9 +29,6 @@ export async function searchTweets(query: string) {
     ...(mutes.data?.map((m) => m.muted_id) ?? []),
   ])
 
-  // Use full-text search via the GIN index (tweets_content_fts_idx).
-  // textSearch uses plainto_tsquery under the hood for websearch-style input,
-  // which is safe against injection and hits the GIN index automatically.
   let dbQuery = supabase
     .from('tweets')
     .select('id, content, created_at, profiles!tweets_user_id_fkey (username, display_name, avatar_url)')
@@ -40,5 +43,5 @@ export async function searchTweets(query: string) {
   }
 
   const { data } = await dbQuery
-  return (data as any) ?? []
+  return (data ?? []) as unknown as SearchedTweet[]
 }

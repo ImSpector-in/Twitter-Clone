@@ -1,12 +1,12 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
+import { requireUser } from '@/lib/auth/requireUser'
+import { isBlockedEitherDirection } from '@/lib/auth/blockCheck'
+import { PG_UNIQUE_VIOLATION } from '@/lib/constants'
 
 export async function toggleLike(tweetId: string) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Not authenticated')
+  const { user, supabase } = await requireUser()
 
   // Q-007: Look up tweet author and check for blocks
   const { data: tweet } = await supabase
@@ -16,14 +16,9 @@ export async function toggleLike(tweetId: string) {
     .single()
 
   if (tweet && tweet.user_id !== user.id) {
-    const { data: block } = await supabase
-      .from('blocks')
-      .select('blocker_id')
-      .or(`and(blocker_id.eq.${user.id},blocked_id.eq.${tweet.user_id}),and(blocker_id.eq.${tweet.user_id},blocked_id.eq.${user.id})`)
-      .limit(1)
-      .single()
-
-    if (block) throw new Error('Cannot like this tweet')
+    if (await isBlockedEitherDirection(supabase, user.id, tweet.user_id)) {
+      throw new Error('Cannot like this tweet')
+    }
   }
 
   const { data: existing } = await supabase
@@ -38,7 +33,7 @@ export async function toggleLike(tweetId: string) {
   } else {
     const { error } = await supabase.from('likes').insert({ user_id: user.id, tweet_id: tweetId })
     // Q-017: Ignore duplicate key errors (race condition)
-    if (error && error.code !== '23505') throw new Error(error.message)
+    if (error && error.code !== PG_UNIQUE_VIOLATION) throw new Error(error.message)
   }
 
   revalidatePath('/home')

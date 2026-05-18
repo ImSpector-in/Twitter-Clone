@@ -24,13 +24,8 @@ export default function SignupForm() {
       options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
     })
     if (error) {
-      // Q-023: Generic message to prevent account enumeration
-      const msg = error.message?.toLowerCase() ?? ''
-      if (msg.includes('already') || msg.includes('registered') || msg.includes('taken') || msg.includes('exist')) {
-        setError('If this email is available, you\'ll receive a confirmation email.')
-      } else {
-        setError(error.message)
-      }
+      // Q-023: Always show generic message — specific error leaks whether email exists
+      setError('If this email is available, you\'ll receive a confirmation email shortly.')
       setLoading(false)
     }
     else if (data.session) { router.push('/home'); router.refresh() }
@@ -40,7 +35,7 @@ export default function SignupForm() {
   if (success) {
     return (
       <div className="text-center space-y-2 py-4">
-        <p className="text-3xl">📬</p>
+        <p className="text-3xl" aria-hidden="true">📬</p>
         <h2 className="text-lg font-bold text-gray-800">Check your email</h2>
         <p className="text-sm text-gray-500">We sent a confirmation link to <strong>{email}</strong>.</p>
       </div>
@@ -50,24 +45,32 @@ export default function SignupForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
       <div className="relative">
-        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-orange-400 pointer-events-none" />
-        <input type="email" placeholder="Email address" value={email}
+        <label htmlFor="signup-email" className="sr-only">Email address</label>
+        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-orange-400 pointer-events-none" aria-hidden="true" />
+        <input id="signup-email" type="email" placeholder="Email address" value={email}
           onChange={(e) => setEmail(e.target.value)} required
           className={`${inputClass} pl-12 pr-5`}
         />
       </div>
       <div className="relative">
-        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-orange-400 pointer-events-none" />
-        <input type={showPassword ? 'text' : 'password'} placeholder="Password (min 12 characters)"
+        <label htmlFor="signup-password" className="sr-only">Password (minimum 12 characters)</label>
+        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-orange-400 pointer-events-none" aria-hidden="true" />
+        <input id="signup-password" type={showPassword ? 'text' : 'password'} placeholder="Password (min 12 characters)"
           value={password} onChange={(e) => setPassword(e.target.value)} minLength={12} required
           className={`${inputClass} pl-12 pr-12`}
         />
         <button type="button" onClick={() => setShowPassword(p => !p)}
+          aria-label={showPassword ? 'Hide password' : 'Show password'}
           className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
-          {showPassword ? <Eye className="h-5 w-5" /> : <EyeOff className="h-5 w-5" />}
+          {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
         </button>
       </div>
-      {error && <p className="text-sm text-red-500 text-center">{error}</p>}
+      {password.length > 0 && password.length < 12 && (
+        <p className="text-xs text-muted-foreground" aria-live="polite">
+          Password must be at least 12 characters ({password.length}/12)
+        </p>
+      )}
+      {error && <p role="alert" className="text-sm text-red-500 text-center">{error}</p>}
       <button type="submit" disabled={loading}
         className="w-full h-14 rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold text-lg hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50">
         {loading ? 'Creating account...' : 'Create Account'}

@@ -5,9 +5,9 @@ import { formatDistanceToNow } from 'date-fns'
 import { Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { markConversationRead, deleteMessage } from '@/lib/actions/messages'
+import { getUserGradient } from '@/lib/utils/avatar'
 import MessageInput from './MessageInput'
 import type { MessageRow } from '@/lib/queries/messages'
 
@@ -21,18 +21,6 @@ type Props = {
   otherUserProfile: { id: string; username: string; displayName: string | null; avatarUrl: string | null }
 }
 
-const GRADIENTS = [
-  'from-teal-400 to-cyan-600', 'from-pink-400 to-rose-600',
-  'from-violet-400 to-purple-600', 'from-amber-400 to-orange-600',
-  'from-emerald-400 to-green-600', 'from-blue-400 to-indigo-600',
-]
-
-function getGradient(username: string) {
-  let hash = 0
-  for (let i = 0; i < username.length; i++) hash = username.charCodeAt(i) + ((hash << 5) - hash)
-  return GRADIENTS[Math.abs(hash) % GRADIENTS.length]
-}
-
 export default function MessageThread({
   conversationId,
   initialMessages,
@@ -42,14 +30,12 @@ export default function MessageThread({
 }: Props) {
   const [messages, setMessages] = useState<DisplayMessage[]>(initialMessages)
   const bottomRef = useRef<HTMLDivElement>(null)
-  const router = useRouter()
 
   const markRead = useCallback(async () => {
     await markConversationRead(conversationId)
-    router.refresh()
-  }, [conversationId, router])
+  }, [conversationId])
 
-  // Mark as read on mount — also refreshes server layout so the badge clears
+  // Mark as read on mount
   useEffect(() => {
     markRead()
   }, [markRead])
@@ -86,17 +72,12 @@ export default function MessageThread({
           if (raw.deleted_at) return
 
           const isMe = raw.sender_id === currentUserId
-
-          // Determine the sender profile — for us it's always currentUserProfile,
-          // for the other person it's otherUserProfile (1:1 DM only ever has two participants)
           const senderProfile = isMe
             ? currentUserProfile
             : { username: otherUserProfile.username, displayName: otherUserProfile.displayName, avatarUrl: otherUserProfile.avatarUrl }
 
           setMessages((prev) => {
-            // Deduplicate: optimistic message already exists with same client UUID
             if (prev.some((m) => m.id === raw.id)) {
-              // Confirm the pending optimistic message
               return prev.map((m) =>
                 m.id === raw.id ? { ...m, pending: false } : m
               )
@@ -114,7 +95,6 @@ export default function MessageThread({
             ]
           })
 
-          // Mark as read when other person sends something
           if (!isMe) markRead()
         }
       )
@@ -123,7 +103,7 @@ export default function MessageThread({
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [conversationId, currentUserId, currentUserProfile, otherUserProfile])
+  }, [conversationId, currentUserId, currentUserProfile, otherUserProfile, markRead])
 
   function handleOptimistic(msg: DisplayMessage & { pending: true }) {
     setMessages((prev) => [...prev, msg])
@@ -140,7 +120,6 @@ export default function MessageThread({
 
   return (
     <div className="flex flex-col flex-1 min-h-0 pb-14 md:pb-0">
-      {/* Message list */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
         {messages.length === 0 && (
           <p className="text-center text-muted-foreground text-sm py-8">
@@ -153,14 +132,13 @@ export default function MessageThread({
           const profile = msg.senderProfile
           const displayName = profile?.displayName || profile?.username || 'Unknown'
           const initials = displayName.slice(0, 2).toUpperCase()
-          const gradient = getGradient(profile?.username ?? '')
+          const gradient = getUserGradient(profile?.username ?? '')
 
           return (
             <div
               key={msg.id}
               className={`flex items-end gap-2 group ${isMe ? 'flex-row-reverse' : 'flex-row'}`}
             >
-              {/* Avatar — only shown for other person */}
               {!isMe && (
                 <Avatar className="h-8 w-8 shrink-0 mb-0.5">
                   <AvatarImage src={profile?.avatarUrl ?? undefined} alt={displayName} />
@@ -191,7 +169,8 @@ export default function MessageThread({
                   {isMe && !msg.pending && (
                     <button
                       onClick={() => handleDelete(msg.id)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                      aria-label="Delete message"
+                      className="opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity text-muted-foreground hover:text-destructive focus:text-destructive"
                     >
                       <Trash2 className="h-3 w-3" />
                     </button>
@@ -205,7 +184,6 @@ export default function MessageThread({
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
       <MessageInput
         conversationId={conversationId}
         currentUserId={currentUserId}

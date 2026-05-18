@@ -1,6 +1,33 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+const PROTECTED_PATHS = [
+  '/home', '/profile', '/notifications', '/tweet',
+  '/discover', '/bookmarks', '/trending', '/settings', '/messages',
+]
+
+const AUTH_PATHS = ['/login', '/signup']
+
+function isProtectedPath(pathname: string): boolean {
+  return PROTECTED_PATHS.some((p) => pathname.startsWith(p))
+}
+
+function isAuthPath(pathname: string): boolean {
+  return AUTH_PATHS.includes(pathname)
+}
+
+async function enforceMfa(
+  supabase: ReturnType<typeof createServerClient>,
+  pathname: string
+): Promise<string | null> {
+  if (pathname === '/auth/mfa') return null
+  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+  if (aal && aal.nextLevel === 'aal2' && aal.currentLevel !== 'aal2') {
+    return '/auth/mfa'
+  }
+  return null
+}
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
@@ -26,39 +53,25 @@ export async function updateSession(request: NextRequest) {
   // Refresh session — do not add logic between createServerClient and supabase.auth.getUser()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const pathname = request.nextUrl.pathname
+  const { pathname } = request.nextUrl
 
-  // Redirect unauthenticated users away from protected routes
-  const isProtectedRoute =
-    pathname.startsWith('/home') ||
-    pathname.startsWith('/profile') ||
-    pathname.startsWith('/notifications') ||
-    pathname.startsWith('/tweet') ||
-    pathname.startsWith('/discover') ||
-    pathname.startsWith('/bookmarks') ||
-    pathname.startsWith('/trending') ||
-    pathname.startsWith('/settings')
-
-  if (!user && isProtectedRoute) {
+  if (!user && isProtectedPath(pathname)) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
 
-  // Redirect authenticated users away from login/signup
-  const isAuthRoute = pathname === '/login' || pathname === '/signup'
-  if (user && isAuthRoute) {
+  if (user && isAuthPath(pathname)) {
     const url = request.nextUrl.clone()
     url.pathname = '/home'
     return NextResponse.redirect(url)
   }
 
-  // Q-001: Enforce MFA (AAL2) for users who have it enrolled
-  if (user && isProtectedRoute && pathname !== '/auth/mfa') {
-    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
-    if (aal && aal.nextLevel === 'aal2' && aal.currentLevel !== 'aal2') {
+  if (user && isProtectedPath(pathname)) {
+    const mfaPath = await enforceMfa(supabase, pathname)
+    if (mfaPath) {
       const url = request.nextUrl.clone()
-      url.pathname = '/auth/mfa'
+      url.pathname = mfaPath
       return NextResponse.redirect(url)
     }
   }

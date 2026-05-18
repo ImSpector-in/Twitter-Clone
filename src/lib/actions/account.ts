@@ -4,6 +4,29 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
+const MAX_ATTEMPTS = 5
+const WINDOW_MINUTES = 15
+
+async function checkRateLimit(userId: string, action: string): Promise<void> {
+  const admin = createAdminClient()
+  const windowStart = new Date(Date.now() - WINDOW_MINUTES * 60 * 1000).toISOString()
+
+  // Insert FIRST, then count — eliminates TOCTOU race where parallel requests
+  // could all observe count < MAX before inserting.
+  await admin.from('auth_attempts').insert({ user_id: userId, action })
+
+  const { count } = await admin
+    .from('auth_attempts')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('action', action)
+    .gte('created_at', windowStart)
+
+  if ((count ?? 0) > MAX_ATTEMPTS) {
+    throw new Error(`Too many attempts. Please wait ${WINDOW_MINUTES} minutes before trying again.`)
+  }
+}
+
 export async function changePassword(formData: FormData) {
   const currentPassword = formData.get('current_password') as string
   const password = formData.get('password') as string
@@ -17,7 +40,8 @@ export async function changePassword(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user?.email) throw new Error('Not authenticated')
 
-  // Verify current password before allowing change
+  await checkRateLimit(user.id, 'change_password')
+
   const { error: authError } = await supabase.auth.signInWithPassword({
     email: user.email,
     password: currentPassword,
@@ -27,7 +51,6 @@ export async function changePassword(formData: FormData) {
   const { error } = await supabase.auth.updateUser({ password })
   if (error) throw new Error(error.message)
 
-  // Invalidate all other sessions
   await supabase.auth.signOut({ scope: 'others' })
 }
 
@@ -42,7 +65,8 @@ export async function changeEmail(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user?.email) throw new Error('Not authenticated')
 
-  // Verify current password before allowing email change
+  await checkRateLimit(user.id, 'change_email')
+
   const { error: authError } = await supabase.auth.signInWithPassword({
     email: user.email,
     password: currentPassword,
@@ -70,7 +94,8 @@ export async function deleteAccount(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user?.email) throw new Error('Not authenticated')
 
-  // Require password confirmation before deleting
+  await checkRateLimit(user.id, 'delete_account')
+
   const { error: authError } = await supabase.auth.signInWithPassword({
     email: user.email,
     password,
@@ -78,8 +103,7 @@ export async function deleteAccount(formData: FormData) {
   if (authError) throw new Error('Incorrect password')
 
   const admin = createAdminClient()
-  await admin.from('profiles').delete().eq('id', user.id)
-
+  // Delete auth user first — profiles cascade-delete via FK
   const { error } = await admin.auth.admin.deleteUser(user.id)
   if (error) throw new Error(error.message)
 

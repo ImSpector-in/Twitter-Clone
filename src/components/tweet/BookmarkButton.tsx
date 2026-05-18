@@ -21,6 +21,8 @@ export default function BookmarkButton({ tweetId, initialBookmarked }: { tweetId
   return (
     <button
       onClick={handleClick}
+      aria-label={bookmarked ? 'Remove bookmark' : 'Bookmark'}
+      aria-pressed={bookmarked}
       className={`flex items-center gap-1 text-xs transition-colors group-hover:text-primary ${bookmarked ? 'text-primary' : 'text-muted-foreground'}`}
     >
       <Bookmark className={`h-4 w-4 ${bookmarked ? 'fill-primary' : ''}`} />

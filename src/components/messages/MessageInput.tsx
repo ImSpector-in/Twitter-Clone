@@ -4,6 +4,7 @@ import { useRef, useState } from 'react'
 import { Send } from 'lucide-react'
 import { toast } from 'sonner'
 import { sendMessage } from '@/lib/actions/messages'
+import { MESSAGE_MAX_LENGTH } from '@/lib/constants'
 import type { MessageRow } from '@/lib/queries/messages'
 
 type Props = {
@@ -24,7 +25,6 @@ export default function MessageInput({ conversationId, currentUserId, currentUse
 
     const clientId = crypto.randomUUID()
 
-    // Immediately show optimistic message
     onOptimistic({
       id: clientId,
       conversationId,
@@ -55,7 +55,7 @@ export default function MessageInput({ conversationId, currentUserId, currentUse
     }
   }
 
-  const remaining = 1000 - content.length
+  const remaining = MESSAGE_MAX_LENGTH - content.length
 
   return (
     <div className="border-t border-border px-4 py-3 bg-background">
@@ -65,7 +65,8 @@ export default function MessageInput({ conversationId, currentUserId, currentUse
           value={content}
           onChange={(e) => setContent(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Send a message… (Enter to send, Shift+Enter for newline)"
+          placeholder="Send a message…"
+          aria-label="Message"
           rows={1}
           className="flex-1 resize-none bg-transparent text-sm focus:outline-none min-h-[24px] max-h-32 py-1 placeholder:text-muted-foreground"
           style={{ height: 'auto' }}
@@ -76,7 +77,7 @@ export default function MessageInput({ conversationId, currentUserId, currentUse
           }}
         />
         <div className="flex items-center gap-2 pb-1 shrink-0">
-          {content.length > 900 && (
+          {content.length > MESSAGE_MAX_LENGTH - 100 && (
             <span className={`text-xs tabular-nums ${remaining < 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
               {remaining}
             </span>
@@ -84,9 +85,10 @@ export default function MessageInput({ conversationId, currentUserId, currentUse
           <button
             onClick={handleSend}
             disabled={!content.trim() || sending || remaining < 0}
+            aria-label="Send"
             className="h-8 w-8 flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            <Send className="h-4 w-4" />
+            <Send className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
       </div>

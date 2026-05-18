@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { getProfileByUsername, getTweetsByUserId, getFollowCounts } from '@/lib/queries/profile'
-import { attachLikedBy, attachOriginals, getTweetById } from '@/lib/queries/tweets'
+import { getProfileByUsername, getTweetsByUserId, getFollowCounts, getRelationshipStatus } from '@/lib/queries/profile'
+import { getTweetById } from '@/lib/queries/tweets'
 import ProfileHeader from '@/components/profile/ProfileHeader'
 import FollowButton from '@/components/profile/FollowButton'
 import BlockMuteButtons from '@/components/profile/BlockMuteButtons'
@@ -9,6 +9,8 @@ import MessageButton from '@/components/messages/MessageButton'
 import TweetCard from '@/components/tweet/TweetCard'
 import TweetList from '@/components/tweet/TweetList'
 import { Lock, Pin } from 'lucide-react'
+import type { TweetWithProfile } from '@/types'
+import { BOT_IDS } from '@/lib/config/bots'
 
 type Props = {
   params: Promise<{ username: string }>
@@ -23,38 +25,28 @@ export default async function ProfilePage({ params }: Props) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const [counts, followCheck, blockCheck, muteCheck] = await Promise.all([
-    getFollowCounts(profile.id),
-    supabase.from('follows').select('follower_id').eq('follower_id', user!.id).eq('following_id', profile.id).single(),
-    supabase.from('blocks').select('blocker_id').eq('blocker_id', user!.id).eq('blocked_id', profile.id).single(),
-    supabase.from('mutes').select('muter_id').eq('muter_id', user!.id).eq('muted_id', profile.id).single(),
-  ])
-
   const isOwnProfile = user?.id === profile.id
 
-  const BOT_IDS = [
-    process.env.BOT_CTO_FANATIC_ID,
-    process.env.BOT_UX_CRITIC_ID,
-    process.env.BOT_BUILDINPUBLIC_ID,
-  ].filter(Boolean) as string[]
+  const [counts, relationship] = await Promise.all([
+    getFollowCounts(profile.id),
+    isOwnProfile ? Promise.resolve({ isFollowing: false, isBlocked: false, isMuted: false }) : getRelationshipStatus(user!.id, profile.id),
+  ])
+
   const isBot = BOT_IDS.includes(profile.id)
-  const isFollowing = !!followCheck.data
-  const isBlocked = !!blockCheck.data
-  const isMuted = !!muteCheck.data
+  const { isFollowing, isBlocked, isMuted } = relationship
   const canViewFollows = isOwnProfile || !profile.is_private || isFollowing
 
   // Q-005: Private accounts hide tweets from non-followers
   const canViewTweets = isOwnProfile || !profile.is_private || isFollowing
 
-  let tweets: any[] = []
-  let pinnedTweet: any = null
+  let tweets: TweetWithProfile[] = []
+  let pinnedTweet: TweetWithProfile | null = null
   if (canViewTweets) {
-    const [rawTweets, pinned] = await Promise.all([
-      getTweetsByUserId(profile.id),
+    const [fetchedTweets, pinned] = await Promise.all([
+      getTweetsByUserId(profile.id, user!.id),
       profile.pinned_tweet_id ? getTweetById(profile.pinned_tweet_id, user!.id) : Promise.resolve(null),
     ])
-    const withOriginals = await attachOriginals(rawTweets)
-    tweets = await attachLikedBy(withOriginals, user!.id)
+    tweets = fetchedTweets
     pinnedTweet = pinned
   }
 
@@ -104,7 +96,7 @@ export default async function ProfilePage({ params }: Props) {
             </div>
           )}
           <TweetList
-            tweets={tweets as any}
+            tweets={tweets}
             currentUserId={user!.id}
             emptyMessage="No tweets yet."
             profileUsername={isOwnProfile ? profile.username : undefined}

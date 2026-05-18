@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { getFeedTweets, getAllTweets } from '@/lib/queries/tweets'
@@ -5,6 +6,8 @@ import HomeTabs from '@/components/home/HomeTabs'
 import HomeComposer from '@/components/tweet/HomeComposer'
 import FeedInfiniteScroll from '@/components/home/FeedInfiniteScroll'
 import { TweetListSkeleton } from '@/components/tweet/TweetSkeleton'
+
+export const metadata: Metadata = { title: 'Home · Quotora' }
 
 type Props = {
   searchParams: Promise<{ tab?: string }>
@@ -17,7 +20,7 @@ async function Feed({ userId, isFollowing }: { userId: string; isFollowing: bool
 
   return (
     <FeedInfiniteScroll
-      initialTweets={tweets as any}
+      initialTweets={tweets}
       initialCursor={nextCursor}
       currentUserId={userId}
       feedType={isFollowing ? 'following' : 'for-you'}

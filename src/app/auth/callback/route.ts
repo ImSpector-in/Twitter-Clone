@@ -1,14 +1,23 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+function safeRedirect(raw: string | null, fallback = '/home'): string {
+  if (!raw) return fallback
+  try {
+    const url = new URL(raw, 'https://placeholder.invalid')
+    if (url.hostname !== 'placeholder.invalid') return fallback
+    const path = url.pathname + url.search + url.hash
+    if (!path.startsWith('/') || path.startsWith('//')) return fallback
+    return path
+  } catch {
+    return fallback
+  }
+}
+
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-
-  const rawNext = searchParams.get('next') ?? '/home'
-  const safe = rawNext.startsWith('/') && !rawNext.startsWith('//') && !rawNext.startsWith('/\\')
-    ? rawNext
-    : '/home'
+  const safe = safeRedirect(searchParams.get('next'))
 
   if (code) {
     const supabase = await createClient()
@@ -21,7 +30,6 @@ export async function GET(request: Request) {
         .eq('id', user.id)
         .single()
 
-      // New OAuth user — send them to set a real username
       if (profile?.username?.startsWith('user_')) {
         return NextResponse.redirect(`${origin}/profile/edit?welcome=1`)
       }

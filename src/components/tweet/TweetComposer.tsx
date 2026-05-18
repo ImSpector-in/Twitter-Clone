@@ -11,8 +11,7 @@ import { Textarea } from '@/components/ui/textarea'
 import ReplyScopeButton, { type ReplyScope } from './ReplyScopeButton'
 import EmojiPickerButton from './EmojiPickerButton'
 import GifPickerButton from './GifPickerButton'
-
-const MAX = 280
+import { TWEET_MAX_LENGTH } from '@/lib/constants'
 
 type Props = {
   onSuccess?: () => void
@@ -30,7 +29,7 @@ export default function TweetComposer({ onSuccess, replyToId, placeholder = "Wha
   const [replyScope, setReplyScope] = useState<ReplyScope>('everyone')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const remaining = MAX - content.length
+  const remaining = TWEET_MAX_LENGTH - content.length
 
   async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -109,6 +108,7 @@ export default function TweetComposer({ onSuccess, replyToId, placeholder = "Wha
         value={content}
         onChange={(e) => setContent(e.target.value)}
         rows={4}
+        maxLength={TWEET_MAX_LENGTH}
         className="resize-none border-none shadow-none focus-visible:ring-0 text-base p-0 bg-transparent"
       />
 
@@ -134,9 +134,10 @@ export default function TweetComposer({ onSuccess, replyToId, placeholder = "Wha
           <button
             type="button"
             onClick={() => { setImageUrl(null); setGifUrl(null) }}
+            aria-label="Remove image"
             className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-0.5 hover:bg-black/80"
           >
-            <X className="h-4 w-4" />
+            <X className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
       )}
@@ -155,14 +156,17 @@ export default function TweetComposer({ onSuccess, replyToId, placeholder = "Wha
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={imageUploading || !!gifUrl}
+            aria-label="Add photo"
             className="text-muted-foreground hover:text-primary transition-colors p-1 rounded disabled:opacity-40"
-            title="Photo"
           >
-            <ImageIcon className="h-5 w-5" />
+            <ImageIcon className="h-5 w-5" aria-hidden="true" />
           </button>
           <GifPickerButton onSelect={handleGifSelect} />
           <EmojiPickerButton onInsert={insertEmoji} />
-          <span className={`text-sm ml-2 tabular-nums ${remaining < 20 ? remaining < 0 ? 'text-destructive font-semibold' : 'text-yellow-500' : 'text-muted-foreground'}`}>
+          <span
+            aria-live={remaining < 20 ? 'polite' : 'off'}
+            className={`text-sm ml-2 tabular-nums ${remaining < 20 ? remaining < 0 ? 'text-destructive font-semibold' : 'text-yellow-500' : 'text-muted-foreground'}`}
+          >
             {remaining}
           </span>
         </div>

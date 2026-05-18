@@ -1,12 +1,10 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
+import { requireUser } from '@/lib/auth/requireUser'
 
 export async function pinTweet(tweetId: string, profileUsername: string) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Not authenticated')
+  const { user, supabase } = await requireUser()
 
   const { data: tweet } = await supabase
     .from('tweets')
@@ -26,9 +24,7 @@ export async function pinTweet(tweetId: string, profileUsername: string) {
 }
 
 export async function unpinTweet(profileUsername: string) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Not authenticated')
+  const { user, supabase } = await requireUser()
 
   const { error } = await supabase
     .from('profiles')

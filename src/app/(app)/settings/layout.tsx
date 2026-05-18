@@ -1,4 +1,7 @@
+import type { Metadata } from 'next'
 import SettingsSidebar from '@/components/settings/SettingsSidebar'
+
+export const metadata: Metadata = { title: 'Settings · Quotora' }
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
   return (
