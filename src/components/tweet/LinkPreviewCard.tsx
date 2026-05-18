@@ -25,9 +25,11 @@ export default function LinkPreviewCard({ url }: { url: string }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [shouldFetch, setShouldFetch] = useState(false)
   const [og, setOg] = useState<OgData | null | undefined>(undefined)
+  const [imageFailed, setImageFailed] = useState(false)
 
   // Trigger fetch only when card enters viewport (+ 200px root margin)
   useEffect(() => {
+    setImageFailed(false)
     if (ogCache.has(url)) {
       setOg(ogCache.get(url) ?? null)
       return
@@ -81,9 +83,14 @@ export default function LinkPreviewCard({ url }: { url: string }) {
           onClick={(e) => e.stopPropagation()}
           className="mt-2 flex items-stretch gap-3 rounded-xl border border-border bg-muted/30 hover:bg-muted/60 transition-colors overflow-hidden no-underline"
         >
-          {og.image && (
+          {og.image && !imageFailed && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={og.image} alt="" className="h-20 w-20 shrink-0 object-cover" />
+            <img
+              src={`/api/og-image?url=${encodeURIComponent(og.image)}`}
+              alt=""
+              className="h-20 w-20 shrink-0 object-cover"
+              onError={() => setImageFailed(true)}
+            />
           )}
           <div className="flex flex-col justify-center gap-0.5 py-2.5 pr-3 min-w-0">
             <span className="text-[11px] text-muted-foreground">{getDomain(url)}</span>
