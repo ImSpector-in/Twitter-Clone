@@ -1,16 +1,22 @@
 import { unstable_cache } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/public'
 
 export type TrendingHashtag = { tag: string; count: number }
 
+type HashtagTweetRow = {
+  content: string | null
+  created_at: string
+}
+
 export const getTrendingHashtags = unstable_cache(
   async function _getTrendingHashtags(limit = 8): Promise<TrendingHashtag[]> {
-    const supabase = await createClient()
+    const supabase = createPublicClient()
 
     const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
     const { data } = await supabase
       .from('tweets')
-      .select('content, created_at')
+      .select('content, created_at, profiles!tweets_user_id_fkey!inner(is_private)')
+      .eq('profiles.is_private', false)
       .gte('created_at', since)
       .is('reply_to_id', null)
       .limit(500)
@@ -18,7 +24,7 @@ export const getTrendingHashtags = unstable_cache(
     if (!data) return []
 
     const tagTimestamps = new Map<string, Date[]>()
-    for (const { content, created_at } of data) {
+    for (const { content, created_at } of data as HashtagTweetRow[]) {
       const tags = content?.match(/#(\w+)/g) ?? []
       for (const tag of tags) {
         const key = tag.toLowerCase()
