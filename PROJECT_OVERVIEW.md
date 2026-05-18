@@ -23,6 +23,8 @@ Quotora is a security-hardened, full-stack social platform built on Next.js 16 a
 | Hosting | Vercel (Production) |
 | CI/CD | GitHub Actions |
 | AI Runtime | Groq API |
+| Link Safety | Google Safe Browsing |
+| Media Search | Giphy API |
 | Code Auditing | Claude Code |
 
 ---
@@ -54,7 +56,10 @@ The home feed uses **cursor-based pagination** — 20 tweets per page with **inf
 Full-text tweet and user search powered by **PostgreSQL `textSearch`** with a **GIN index** on tweet content. The index lets Postgres jump directly to matching rows instead of scanning the full table, keeping search fast at any scale.
 
 ### Link Safety & Previews
-Every URL posted is scanned asynchronously against the **Google Safe Browsing API** and stored in a `link_status` column (`clean | flagged`). Flagged links show a warning interstitial before the user follows them. A backfill admin route (`/api/admin/backfill-links`) retroactively scans any URLs posted before the scanner was added. Tweets with URLs also display an **OG link preview card** — title, description, and image — fetched server-side with SSRF protection (private IP ranges and localhost blocked at the route level).
+Every URL posted is scanned asynchronously against the **Google Safe Browsing API** and stored in a `link_status` column (`clean | flagged`). Flagged links show a warning interstitial before the user follows them. A backfill admin route (`/api/admin/backfill-links`) retroactively scans any URLs posted before the scanner was added. Tweets with URLs also display an **OG link preview card** — title, description, and image — fetched server-side with SSRF protection (private IP ranges and localhost blocked at the route level). Preview images are loaded through Quotora's own authenticated image proxy, so the browser does not need to trust or allow arbitrary third-party image CDNs in the Content Security Policy.
+
+### Cache Boundaries
+Public cached reads are deliberately separated from cookie-backed authenticated reads. The trending hashtag query uses a cookie-free public Supabase client inside `unstable_cache`, avoiding the Next.js runtime error caused by reading `cookies()` inside a cached function while preserving a 5-minute cache window.
 
 ### Privacy & Access Control
 Blocking, muting, and private account logic are enforced at the **database row level via PostgreSQL RLS (Row Level Security) policies**. This means the rules live in the database itself — even a direct API call with a valid token cannot read data the policy denies. The application cannot accidentally expose it.
@@ -88,6 +93,7 @@ Third-party API keys (Groq, Giphy) are **server-side only** — never exposed as
 The Quotora codebase underwent a **comprehensive security audit** covering:
 
 - **SSRF (Server-Side Request Forgery)** — the OG preview route blocks requests to localhost, 127.x, 10.x, 192.168.x, and 172.16–31.x before fetching any user-supplied URL
+- **Remote Media Isolation** — third-party OG images are fetched through an authenticated server proxy with MIME checks, redirect safety, and size limits instead of relaxing the app's CSP
 - **SQL Injection** — parameterized queries and ORM-enforced boundaries throughout
 - **Auth Bypasses** — middleware and RLS double-coverage ensures no route or data endpoint can be reached without proper session assurance
 - **API Key Exposure** — all third-party keys are server-side only; no `NEXT_PUBLIC_` secrets
@@ -96,4 +102,4 @@ All identified vulnerabilities were remediated. Every security fix and architect
 
 ---
 
-*Generated 2026-05-16 — Last updated 2026-05-17 — Quotora Architecture v1.1*
+*Generated 2026-05-16 — Last updated 2026-05-18 — Quotora Architecture v1.2*
