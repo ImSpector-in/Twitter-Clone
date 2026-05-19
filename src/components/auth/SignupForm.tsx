@@ -21,7 +21,7 @@ export default function SignupForm() {
     const supabase = createClient()
     const { data, error } = await supabase.auth.signUp({
       email, password,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=/setup/2fa` },
     })
     if (error) {
       // Q-023: Always show generic message — specific error leaks whether email exists
