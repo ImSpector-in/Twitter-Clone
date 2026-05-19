@@ -13,6 +13,7 @@ export async function getNotifications(userId: string, cursor?: string) {
       read,
       created_at,
       tweet_id,
+      actor_id,
       actor:profiles!actor_id (
         username,
         display_name,

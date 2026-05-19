@@ -34,12 +34,16 @@ export default function NotificationsFeed({ initialNotifications, initialNextCur
     }
   }
 
+  function handleNotificationHandled(notificationId: string) {
+    setItems((prev) => prev.filter((n) => n.id !== notificationId))
+  }
+
   return (
     <>
       <ul aria-label="Notifications">
         {items.map((n) => (
           <li key={n.id}>
-            <NotificationItem notification={n} />
+            <NotificationItem notification={n} onHandled={handleNotificationHandled} />
           </li>
         ))}
       </ul>

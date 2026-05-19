@@ -17,16 +17,24 @@ export async function searchTweets(query: string): Promise<SearchedTweet[]> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return []
 
-  const [blocksBy, blocksOf, mutes] = await Promise.all([
+  const [blocksBy, blocksOf, mutes, privateProfiles, following] = await Promise.all([
     supabase.from('blocks').select('blocked_id').eq('blocker_id', user.id),
     supabase.from('blocks').select('blocker_id').eq('blocked_id', user.id),
     supabase.from('mutes').select('muted_id').eq('muter_id', user.id),
+    supabase.from('profiles').select('id').eq('is_private', true).neq('id', user.id),
+    supabase.from('follows').select('following_id').eq('follower_id', user.id).limit(2000),
   ])
+
+  const followingSet = new Set(following.data?.map((f) => f.following_id) ?? [])
+  const privateNotFollowed = (privateProfiles.data ?? [])
+    .filter((p) => !followingSet.has(p.id))
+    .map((p) => p.id)
 
   const excluded = new Set<string>([
     ...(blocksBy.data?.map((b) => b.blocked_id) ?? []),
     ...(blocksOf.data?.map((b) => b.blocker_id) ?? []),
     ...(mutes.data?.map((m) => m.muted_id) ?? []),
+    ...privateNotFollowed,
   ])
 
   let dbQuery = supabase

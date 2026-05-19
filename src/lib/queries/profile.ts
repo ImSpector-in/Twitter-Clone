@@ -90,15 +90,17 @@ export async function getFollowingIds(userId: string): Promise<string[]> {
 
 export async function getRelationshipStatus(viewerId: string, targetId: string) {
   const supabase = await createClient()
-  const [followCheck, blockCheck, muteCheck] = await Promise.all([
+  const [followCheck, blockCheck, muteCheck, requestCheck] = await Promise.all([
     supabase.from('follows').select('follower_id').eq('follower_id', viewerId).eq('following_id', targetId).single(),
     supabase.from('blocks').select('blocker_id').eq('blocker_id', viewerId).eq('blocked_id', targetId).single(),
     supabase.from('mutes').select('muter_id').eq('muter_id', viewerId).eq('muted_id', targetId).single(),
+    supabase.from('follow_requests').select('id').eq('follower_id', viewerId).eq('following_id', targetId).maybeSingle(),
   ])
   return {
     isFollowing: !!followCheck.data,
     isBlocked: !!blockCheck.data,
     isMuted: !!muteCheck.data,
+    hasPendingRequest: !!requestCheck.data,
   }
 }
 

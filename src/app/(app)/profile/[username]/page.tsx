@@ -29,11 +29,11 @@ export default async function ProfilePage({ params }: Props) {
 
   const [counts, relationship] = await Promise.all([
     getFollowCounts(profile.id),
-    isOwnProfile ? Promise.resolve({ isFollowing: false, isBlocked: false, isMuted: false }) : getRelationshipStatus(user!.id, profile.id),
+    isOwnProfile ? Promise.resolve({ isFollowing: false, isBlocked: false, isMuted: false, hasPendingRequest: false }) : getRelationshipStatus(user!.id, profile.id),
   ])
 
   const isBot = BOT_IDS.includes(profile.id)
-  const { isFollowing, isBlocked, isMuted } = relationship
+  const { isFollowing, isBlocked, isMuted, hasPendingRequest } = relationship
   const canViewFollows = isOwnProfile || !profile.is_private || isFollowing
 
   // Q-005: Private accounts hide tweets from non-followers
@@ -66,6 +66,7 @@ export default async function ProfilePage({ params }: Props) {
                 targetUserId={profile.id}
                 targetUsername={profile.username}
                 initialIsFollowing={isFollowing}
+                initialHasPendingRequest={hasPendingRequest}
               />
               <BlockMuteButtons
                 targetId={profile.id}
@@ -108,7 +109,9 @@ export default async function ProfilePage({ params }: Props) {
           <Lock className="h-10 w-10 text-muted-foreground" />
           <h2 className="font-semibold text-lg">This account is private</h2>
           <p className="text-muted-foreground text-sm max-w-xs">
-            Follow this account to see their tweets.
+            {hasPendingRequest
+              ? 'Your follow request is pending approval.'
+              : 'Follow this account to see their tweets.'}
           </p>
         </div>
       )}

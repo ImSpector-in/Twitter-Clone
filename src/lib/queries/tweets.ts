@@ -101,19 +101,29 @@ export async function attachLikedBy(tweets: RawTweetWithOriginal[], userId: stri
 
 async function getExcludedUserIds(userId: string) {
   const supabase = await createClient()
-  const [blocksBy, blocksOf, mutes, mutedWords] = await Promise.all([
+  const [blocksBy, blocksOf, mutes, mutedWords, privateProfiles, following] = await Promise.all([
     supabase.from('blocks').select('blocked_id').eq('blocker_id', userId),
     supabase.from('blocks').select('blocker_id').eq('blocked_id', userId),
     supabase.from('mutes').select('muted_id').eq('muter_id', userId),
     supabase.from('muted_words').select('word').eq('user_id', userId),
+    supabase.from('profiles').select('id').eq('is_private', true).neq('id', userId),
+    supabase.from('follows').select('following_id').eq('follower_id', userId).limit(2000),
   ])
+
+  const followingSet = new Set(following.data?.map((f) => f.following_id) ?? [])
+  const privateNotFollowed = (privateProfiles.data ?? [])
+    .filter((p) => !followingSet.has(p.id))
+    .map((p) => p.id)
+
   const excluded = new Set<string>([
     ...(blocksBy.data?.map((b) => b.blocked_id) ?? []),
     ...(blocksOf.data?.map((b) => b.blocker_id) ?? []),
     ...(mutes.data?.map((m) => m.muted_id) ?? []),
+    ...privateNotFollowed,
   ])
   const mutedWordList = mutedWords.data?.map((w) => w.word) ?? []
-  return { excluded, mutedWordList }
+  // Return followingSet so getFeedTweets can reuse it instead of querying follows again
+  return { excluded, mutedWordList, followingSet }
 }
 
 function filterMutedWords(tweets: RawTweet[], mutedWordList: string[]): RawTweet[] {
@@ -175,16 +185,9 @@ export type PaginatedTweetsResult = {
 
 export async function getFeedTweets(userId: string, cursor?: string | null): Promise<PaginatedTweetsResult> {
   const supabase = await createClient()
-  const { excluded, mutedWordList } = await getExcludedUserIds(userId)
+  const { excluded, mutedWordList, followingSet } = await getExcludedUserIds(userId)
 
-  const { data: follows } = await supabase
-    .from('follows')
-    .select('following_id')
-    .eq('follower_id', userId)
-    .limit(2000)
-
-  const followingIds = follows?.map((f) => f.following_id) ?? []
-  const feedUserIds = [...followingIds, userId].filter((id) => !excluded.has(id))
+  const feedUserIds = [...followingSet, userId].filter((id) => !excluded.has(id))
 
   let query = supabase
     .from('tweets')
@@ -216,6 +219,11 @@ export async function getAllTweets(userId?: string, cursor?: string | null): Pro
     const result = await getExcludedUserIds(userId)
     excluded = result.excluded
     mutedWordList = result.mutedWordList
+    // excluded already contains private-not-followed from getExcludedUserIds
+  } else {
+    // Unauthenticated: exclude every private account (RLS handles this too, belt-and-suspenders)
+    const { data: privateProfiles } = await supabase.from('profiles').select('id').eq('is_private', true)
+    privateProfiles?.forEach((p) => excluded.add(p.id))
   }
 
   let query = supabase
@@ -263,7 +271,16 @@ export async function getTweetById(tweetId: string, userId?: string): Promise<Tw
 export async function getTweetsByHashtag(tag: string, userId?: string): Promise<TweetWithProfile[]> {
   const supabase = await createClient()
 
-  const { data, error } = await supabase
+  let privateExcluded = new Set<string>()
+  if (userId) {
+    const { excluded } = await getExcludedUserIds(userId)
+    privateExcluded = excluded
+  } else {
+    const { data: privateProfiles } = await supabase.from('profiles').select('id').eq('is_private', true)
+    privateProfiles?.forEach((p) => privateExcluded.add(p.id))
+  }
+
+  let query = supabase
     .from('tweets')
     .select(TWEET_SELECT)
     .ilike('content', `%#${tag}%`)
@@ -272,6 +289,11 @@ export async function getTweetsByHashtag(tag: string, userId?: string): Promise<
     .order('created_at', { ascending: false })
     .limit(50)
 
+  if (privateExcluded.size > 0) {
+    query = query.not('user_id', 'in', `(${[...privateExcluded].join(',')})`)
+  }
+
+  const { data, error } = await query
   if (error) throw new Error(error.message)
   const withOriginals = await attachOriginals(toRawTweets(data ?? []))
   if (!userId) return withOriginals.map(rawToPublic)

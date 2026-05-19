@@ -71,10 +71,11 @@ export type TweetWithProfile = {
 
 export type Notification = {
   id: string
-  type: 'like' | 'follow' | 'reply' | 'mention'
+  type: 'like' | 'follow' | 'reply' | 'mention' | 'follow_request' | 'follow_request_accepted'
   read: boolean
   created_at: string
   tweet_id: string | null
+  actor_id: string
   actor: {
     username: string
     display_name: string | null
