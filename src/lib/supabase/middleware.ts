@@ -7,9 +7,10 @@ const PROTECTED_PATHS = [
   '/setup/2fa',
 ]
 
-// Routes that require a session but must NOT trigger AAL2 enforcement
-// (either because they are the MFA challenge itself, or because the user
-// is mid-enrollment and nextLevel becomes aal2 before verify completes)
+// Routes that require a session (listed in PROTECTED_PATHS) but must NOT
+// trigger AAL2 enforcement — either because they ARE the MFA challenge,
+// or because the user is mid-enrollment (nextLevel flips to aal2 before
+// verify completes, which would trap them in a redirect loop).
 const MFA_EXEMPT_PATHS = ['/auth/mfa', '/setup/2fa']
 
 const AUTH_PATHS = ['/login', '/signup']
@@ -26,7 +27,7 @@ async function enforceMfa(
   supabase: ReturnType<typeof createServerClient>,
   pathname: string
 ): Promise<string | null> {
-  if (MFA_EXEMPT_PATHS.some((p) => pathname.startsWith(p))) return null
+  if (MFA_EXEMPT_PATHS.includes(pathname)) return null
   const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
   if (aal && aal.nextLevel === 'aal2' && aal.currentLevel !== 'aal2') {
     return '/auth/mfa'

@@ -2,34 +2,27 @@
 
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useTotpEnrollment } from '@/hooks/useTotpEnrollment'
 
-async function getPostSetupDestination(): Promise<string> {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return '/home'
-  const { data: profile } = await supabase.from('profiles').select('username').eq('id', user.id).single()
-  return profile?.username?.startsWith('user_') ? '/profile/edit?welcome=1' : '/home'
-}
-
-export default function TwoFactorSetupWizard() {
+export default function TwoFactorSetupWizard({ postSetupDest }: { postSetupDest: string }) {
   const router = useRouter()
 
   const { step, qrCode, secret, code, setCode, loading, handleEnroll, handleVerify, handleCancel } =
-    useTotpEnrollment(async () => {
+    useTotpEnrollment(() => {
       toast.success('Two-factor authentication enabled!')
-      const dest = await getPostSetupDestination()
-      router.push(dest)
+      router.push(postSetupDest)
       router.refresh()
     })
 
   async function handleSkip() {
-    await handleCancel()
-    const dest = await getPostSetupDestination()
-    router.push(dest)
+    try {
+      await handleCancel()
+    } catch {
+      // Cleanup failed — orphaned factor will be removed on next visit to this page
+    }
+    router.push(postSetupDest)
     router.refresh()
   }
 
@@ -62,6 +55,8 @@ export default function TwoFactorSetupWizard() {
             onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
             placeholder="000000"
             maxLength={6}
+            inputMode="numeric"
+            autoComplete="one-time-code"
             className="text-center text-xl tracking-widest h-14 rounded-2xl border-gray-200 focus:ring-orange-400 w-40"
             autoFocus
             required
@@ -74,7 +69,7 @@ export default function TwoFactorSetupWizard() {
             >
               {loading ? 'Verifying...' : 'Verify & enable'}
             </button>
-            <Button type="button" variant="outline" size="sm" onClick={handleSkip} disabled={loading} className="h-12 px-5 rounded-2xl">
+            <Button type="button" variant="outline" onClick={handleSkip} disabled={loading} className="h-12 px-5 rounded-2xl">
               Skip
             </Button>
           </div>
@@ -99,7 +94,7 @@ export default function TwoFactorSetupWizard() {
         >
           {loading ? 'Loading...' : 'Set up 2FA'}
         </button>
-        <Button variant="ghost" size="sm" onClick={handleSkip} disabled={loading} className="h-12 px-5 rounded-2xl text-gray-400 hover:text-gray-600">
+        <Button variant="ghost" onClick={handleSkip} disabled={loading} className="h-12 px-5 rounded-2xl text-gray-400 hover:text-gray-600">
           Skip for now
         </Button>
       </div>

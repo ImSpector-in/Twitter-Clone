@@ -74,6 +74,7 @@ export default function MFAPage() {
             <input
               type="text"
               inputMode="numeric"
+              autoComplete="one-time-code"
               placeholder="000000"
               value={code}
               onChange={(e) => setCode(e.target.value)}

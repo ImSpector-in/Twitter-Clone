@@ -1,5 +1,4 @@
 import { redirect } from 'next/navigation'
-import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import TwoFactorSetupWizard from '@/components/auth/TwoFactorSetupWizard'
 import QuotoraLogo from '@/components/ui/QuotoraLogo'
@@ -17,10 +16,15 @@ export default async function SetupTwoFactorPage() {
   // mfaData.totp contains only verified factors — if any exist, setup is already done
   if ((mfaData?.totp?.length ?? 0) > 0) redirect('/home')
 
-  // Clean up any leftover unverified factors from abandoned sessions.
-  // Unverified factors appear in mfaData.all but not mfaData.totp.
-  const unverified = mfaData?.all?.filter((f) => f.factor_type === 'totp' && f.status === 'unverified') ?? []
-  await Promise.all(unverified.map((f) => supabase.auth.mfa.unenroll({ factorId: f.id })))
+  // Determine where to send the user after setup/skip.
+  // Fetch profile server-side so the wizard doesn't need a client-side DB call.
+  const { data: profile } = await supabase.from('profiles').select('username').eq('id', user.id).single()
+  const postSetupDest = profile?.username?.startsWith('user_') ? '/profile/edit?welcome=1' : '/home'
+
+  // Note: unverified factor cleanup is intentionally omitted here.
+  // Cleaning up in a server component re-runs on every router.refresh(), which
+  // races with the client-side enrollment flow. The hook handles cleanup in
+  // handleEnroll() before creating a new factor.
 
   return (
     <div className="min-h-screen bg-[#fdf0ea] flex items-center justify-center relative overflow-hidden py-12 px-4">
@@ -40,7 +44,7 @@ export default async function SetupTwoFactorPage() {
         </div>
 
         <div className="bg-white rounded-3xl shadow-xl p-8">
-          <TwoFactorSetupWizard />
+          <TwoFactorSetupWizard postSetupDest={postSetupDest} />
         </div>
       </div>
     </div>

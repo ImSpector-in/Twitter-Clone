@@ -32,39 +32,29 @@ export function useTotpEnrollment(onSuccess?: () => void): UseTotpEnrollmentRetu
     setLoading(true)
     const supabase = createClient()
 
-    // Reuse any existing unverified factor to prevent duplicate enrollment
-    // (e.g. two tabs open simultaneously, or an abandoned previous session)
+    // Always enroll fresh — unenroll any stale unverified factors first.
+    // Reusing an existing unverified factor omits the QR/secret (Supabase doesn't
+    // re-expose them), leaving the user with nothing to scan.
     const { data: existing } = await supabase.auth.mfa.listFactors()
-    // Unverified factors appear in `all`, not `totp` (which only contains verified factors)
-    const pending = existing?.all?.find((f) => f.factor_type === 'totp' && f.status === 'unverified')
+    const stale = existing?.all?.filter((f) => f.factor_type === 'totp' && f.status === 'unverified') ?? []
+    if (stale.length > 0) {
+      await Promise.all(stale.map((f) => supabase.auth.mfa.unenroll({ factorId: f.id })))
+    }
 
-    let enrolledFactorId: string
-    let enrolledQr: string
-    let enrolledSecret: string
-
-    if (pending) {
-      // Re-challenge the existing unverified factor
-      enrolledFactorId = pending.id
-      enrolledQr = ''
-      enrolledSecret = ''
-    } else {
-      const { data, error } = await supabase.auth.mfa.enroll({
-        factorType: 'totp',
-        issuer: 'Quotora',
-        friendlyName: 'Authenticator App',
-      })
-      if (error || !data) {
-        toast.error('Failed to start 2FA setup. Try again.')
-        setLoading(false)
-        return
-      }
-      enrolledFactorId = data.id
-      enrolledQr = data.totp.qr_code
-      enrolledSecret = data.totp.secret
+    const { data, error } = await supabase.auth.mfa.enroll({
+      factorType: 'totp',
+      issuer: 'Quotora',
+      // Include timestamp so re-enrollment from settings doesn't collide with existing name
+      friendlyName: `Authenticator (${new Date().toLocaleDateString()})`,
+    })
+    if (error || !data) {
+      toast.error('Failed to start 2FA setup. Try again.')
+      setLoading(false)
+      return
     }
 
     const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({
-      factorId: enrolledFactorId,
+      factorId: data.id,
     })
     if (challengeError || !challenge) {
       toast.error('Failed to create challenge. Try again.')
@@ -72,9 +62,9 @@ export function useTotpEnrollment(onSuccess?: () => void): UseTotpEnrollmentRetu
       return
     }
 
-    setFactorId(enrolledFactorId)
-    setQrCode(enrolledQr)
-    setSecret(enrolledSecret)
+    setFactorId(data.id)
+    setQrCode(data.totp.qr_code)
+    setSecret(data.totp.secret)
     setChallengeId(challenge.id)
     setStep('verifying')
     setLoading(false)
@@ -91,8 +81,8 @@ export function useTotpEnrollment(onSuccess?: () => void): UseTotpEnrollmentRetu
       return
     }
     setStep('done')
+    setLoading(false) // before onSuccess — component may unmount during navigation
     onSuccess?.()
-    setLoading(false)
   }
 
   // Unenrolls any pending unverified factor before navigating away.
