@@ -14,12 +14,12 @@ export default async function SetupTwoFactorPage() {
 
   const { data: mfaData } = await supabase.auth.mfa.listFactors()
 
-  // If the user already has a verified TOTP factor, nothing to set up
-  const hasVerified = mfaData?.totp?.some((f) => f.status === 'verified')
-  if (hasVerified) redirect('/home')
+  // mfaData.totp contains only verified factors — if any exist, setup is already done
+  if ((mfaData?.totp?.length ?? 0) > 0) redirect('/home')
 
-  // Clean up any leftover unverified factors from abandoned sessions
-  const unverified = mfaData?.totp?.filter((f) => f.status === 'unverified') ?? []
+  // Clean up any leftover unverified factors from abandoned sessions.
+  // Unverified factors appear in mfaData.all but not mfaData.totp.
+  const unverified = mfaData?.all?.filter((f) => f.factor_type === 'totp' && f.status === 'unverified') ?? []
   await Promise.all(unverified.map((f) => supabase.auth.mfa.unenroll({ factorId: f.id })))
 
   return (

@@ -35,7 +35,8 @@ export function useTotpEnrollment(onSuccess?: () => void): UseTotpEnrollmentRetu
     // Reuse any existing unverified factor to prevent duplicate enrollment
     // (e.g. two tabs open simultaneously, or an abandoned previous session)
     const { data: existing } = await supabase.auth.mfa.listFactors()
-    const pending = existing?.totp?.find((f) => f.factor_type === 'totp' && f.status === 'unverified')
+    // Unverified factors appear in `all`, not `totp` (which only contains verified factors)
+    const pending = existing?.all?.find((f) => f.factor_type === 'totp' && f.status === 'unverified')
 
     let enrolledFactorId: string
     let enrolledQr: string
