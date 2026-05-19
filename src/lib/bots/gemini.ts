@@ -14,8 +14,12 @@ ${originalTweet}
   return callGroq(safePrompt, userMessage)
 }
 
-export async function generateTweet(systemPrompt: string, topic: string): Promise<string> {
-  return callGroq(systemPrompt, `Write a tweet about this topic: ${topic}`)
+export async function generateTweet(systemPrompt: string, topic: string, recentPosts?: string[]): Promise<string> {
+  let msg = `Write a tweet about this topic: ${topic}`
+  if (recentPosts && recentPosts.length > 0) {
+    msg += `\n\nDo not repeat or closely paraphrase any of these recent posts:\n${recentPosts.map(p => `- ${p}`).join('\n')}`
+  }
+  return callGroq(systemPrompt, msg)
 }
 
 // For tweets that intentionally include a curated link — URL is appended after generation,
@@ -23,8 +27,12 @@ export async function generateTweet(systemPrompt: string, topic: string): Promis
 export async function generateTweetWithLink(
   systemPrompt: string,
   topic: string,
+  recentPosts?: string[],
 ): Promise<string> {
-  const msg = `Write a tweet about this topic that naturally leads into sharing a link. Do NOT include a URL — the link will be appended. Topic: ${topic}`
+  let msg = `Write a tweet about this topic that naturally leads into sharing a link. Do NOT include a URL — the link will be appended. Topic: ${topic}`
+  if (recentPosts && recentPosts.length > 0) {
+    msg += `\n\nDo not repeat or closely paraphrase any of these recent posts:\n${recentPosts.map(p => `- ${p}`).join('\n')}`
+  }
   return callGroq(systemPrompt, msg)
 }
 

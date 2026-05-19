@@ -49,6 +49,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, skipped: true, reason: 'already posted recently' })
   }
 
+  // Fetch last 8 top-level posts so the LLM can avoid repeating them
+  const { data: pastPosts } = await supabase
+    .from('tweets')
+    .select('content')
+    .eq('user_id', userId)
+    .is('reply_to_id', null)
+    .order('created_at', { ascending: false })
+    .limit(8)
+  const recentPosts = (pastPosts ?? []).map(p => p.content as string)
+
   // AI news bot: fetch a real article and generate commentary
   if (bot === 'ai_news') {
     const article = await fetchLatestAINews()
@@ -83,8 +93,8 @@ export async function POST(request: Request) {
     ?? persona.topics[Math.floor(Math.random() * persona.topics.length)]
 
   const rawContent = chosenLink
-    ? await generateTweetWithLink(persona.systemPrompt, topic)
-    : await generateTweet(persona.systemPrompt, topic)
+    ? await generateTweetWithLink(persona.systemPrompt, topic, recentPosts)
+    : await generateTweet(persona.systemPrompt, topic, recentPosts)
 
   const content = chosenLink
     ? `${rawContent} ${chosenLink.url}`.trim().slice(0, 280)
