@@ -49,24 +49,28 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, skipped: true, reason: 'already posted recently' })
   }
 
-  // Fetch last 8 top-level posts so the LLM can avoid repeating them
+  // Fetch last 20 top-level posts so the LLM can avoid repeating topics and angles
   const { data: pastPosts } = await supabase
     .from('tweets')
     .select('content')
     .eq('user_id', userId)
     .is('reply_to_id', null)
     .order('created_at', { ascending: false })
-    .limit(8)
+    .limit(20)
   const recentPosts = (pastPosts ?? []).map(p => p.content as string)
 
   // AI news bot: fetch a real article and generate commentary
   if (bot === 'ai_news') {
-    const article = await fetchLatestAINews()
+    // Extract URLs already posted so we can avoid picking the same article again
+    const postedUrls = new Set(
+      recentPosts.flatMap(p => p.match(/https?:\/\/\S+/g) ?? [])
+    )
+    const article = await fetchLatestAINews(postedUrls)
     if (!article) {
       return NextResponse.json({ error: 'No news found' }, { status: 500 })
     }
 
-    const commentary = await generateNewsTweet(persona.systemPrompt, article.title, article.description)
+    const commentary = await generateNewsTweet(persona.systemPrompt, article.title, article.description, recentPosts)
     const content = `${commentary} ${article.link}`.trim().slice(0, 280)
 
     // Q-036: scan the article link before posting — RSS feeds can be compromised

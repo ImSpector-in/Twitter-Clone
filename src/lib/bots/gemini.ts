@@ -37,11 +37,14 @@ export async function generateTweetWithLink(
 }
 
 // For the AI news bot — given a real headline, generate commentary.
-export async function generateNewsTweet(systemPrompt: string, title: string, description: string): Promise<string> {
-  const msg = `Write a commentary tweet about this news. Do NOT include a URL — it will be appended separately.
+export async function generateNewsTweet(systemPrompt: string, title: string, description: string, recentPosts?: string[]): Promise<string> {
+  let msg = `Write a commentary tweet about this news. Do NOT include a URL — it will be appended separately.
 
 Headline: ${title}
 Summary: ${description.slice(0, 200)}`
+  if (recentPosts && recentPosts.length > 0) {
+    msg += `\n\nDo not repeat angles or takes from these recent posts:\n${recentPosts.map(p => `- ${p}`).join('\n')}`
+  }
   return callGroq(systemPrompt, msg)
 }
 

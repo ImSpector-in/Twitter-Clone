@@ -45,34 +45,51 @@ async function readBodyCapped(res: Response): Promise<string | null> {
   return xml
 }
 
-export async function fetchLatestAINews(): Promise<NewsItem | null> {
+async function fetchFeed(url: string): Promise<NewsItem[]> {
+  try {
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'Quotora/1.0' },
+      signal: AbortSignal.timeout(6000),
+    })
+    if (!res.ok) return []
+    const declared = Number(res.headers.get('content-length') ?? '')
+    if (Number.isFinite(declared) && declared > MAX_DECLARED_BYTES) return []
+    const xml = await readBodyCapped(res)
+    if (!xml) return []
+    return parseItems(xml)
+  } catch {
+    return []
+  }
+}
+
+// Accepts a set of already-posted URLs so we can avoid repeating articles.
+// Fetches all feeds in parallel for a larger, more diverse candidate pool.
+export async function fetchLatestAINews(excludeUrls: Set<string> = new Set()): Promise<NewsItem | null> {
   const feeds = [
     'https://techcrunch.com/tag/artificial-intelligence/feed/',
     'https://www.theverge.com/rss/ai-artificial-intelligence/index.xml',
     'https://venturebeat.com/category/ai/feed/',
-  ].sort(() => Math.random() - 0.5)
+  ]
 
-  for (const url of feeds) {
-    try {
-      const res = await fetch(url, {
-        headers: { 'User-Agent': 'Quotora/1.0' },
-        signal: AbortSignal.timeout(6000),
-      })
-      if (!res.ok) continue
+  const results = await Promise.allSettled(feeds.map(fetchFeed))
+  const allItems: NewsItem[] = []
+  const seen = new Set<string>()
 
-      const declared = Number(res.headers.get('content-length') ?? '')
-      if (Number.isFinite(declared) && declared > MAX_DECLARED_BYTES) continue
-
-      const xml = await readBodyCapped(res)
-      if (!xml) continue
-
-      const items = parseItems(xml)
-      if (items.length > 0) {
-        return items[Math.floor(Math.random() * Math.min(items.length, 5))]
+  for (const result of results) {
+    if (result.status !== 'fulfilled') continue
+    for (const item of result.value) {
+      if (!seen.has(item.link)) {
+        seen.add(item.link)
+        allItems.push(item)
       }
-    } catch {
-      continue
     }
   }
-  return null
+
+  if (allItems.length === 0) return null
+
+  // Prefer articles not already posted; fall back to full pool if everything was posted
+  const fresh = allItems.filter(item => !excludeUrls.has(item.link))
+  const pool = fresh.length > 0 ? fresh : allItems
+
+  return pool[Math.floor(Math.random() * pool.length)]
 }
