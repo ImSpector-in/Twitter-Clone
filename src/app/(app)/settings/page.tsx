@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, ArrowLeft } from 'lucide-react'
 import { settingsNavItems } from '@/components/settings/settingsNavItems'
 
 export default function SettingsIndexPage() {
@@ -17,7 +17,11 @@ export default function SettingsIndexPage() {
 
   return (
     <div className="sm:hidden">
-      <div className="border-b px-4 py-3">
+      <div className="border-b px-4 py-3 flex items-center gap-3">
+        <Link href="/home" className="p-1 rounded-full hover:bg-muted transition-colors shrink-0">
+          <ArrowLeft className="h-5 w-5" aria-hidden="true" />
+          <span className="sr-only">Back to home</span>
+        </Link>
         <h2 className="text-xl font-bold">Settings</h2>
       </div>
       <nav aria-label="Settings navigation">
