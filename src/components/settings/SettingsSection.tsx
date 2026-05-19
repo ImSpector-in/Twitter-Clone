@@ -9,7 +9,7 @@ export function SettingsPage({ title, description, children }: {
   return (
     <div>
       <div className="border-b px-6 py-4 flex items-center gap-3">
-        <Link href="/home" className="p-1 rounded-full hover:bg-muted transition-colors sm:hidden shrink-0">
+        <Link href="/settings" className="p-1 rounded-full hover:bg-muted transition-colors sm:hidden shrink-0">
           <ArrowLeft className="h-5 w-5" />
         </Link>
         <div>
