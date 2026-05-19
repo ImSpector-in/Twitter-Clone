@@ -18,7 +18,7 @@ export default function MFAPage() {
 
     const supabase = createClient()
     const { data: factors } = await supabase.auth.mfa.listFactors()
-    const totpFactor = factors?.totp?.[0]
+    const totpFactor = factors?.totp?.find((f) => f.status === 'verified')
 
     if (!totpFactor) {
       setError('No authenticator app found.')

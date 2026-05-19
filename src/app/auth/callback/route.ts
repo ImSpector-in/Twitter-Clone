@@ -31,7 +31,7 @@ export async function GET(request: Request) {
         .single()
 
       if (profile?.username?.startsWith('user_')) {
-        return NextResponse.redirect(`${origin}/profile/edit?welcome=1`)
+        return NextResponse.redirect(`${origin}/setup/2fa`)
       }
     }
   }

@@ -28,7 +28,7 @@ export default function SignupForm() {
       setError('If this email is available, you\'ll receive a confirmation email shortly.')
       setLoading(false)
     }
-    else if (data.session) { router.push('/home'); router.refresh() }
+    else if (data.session) { router.push('/setup/2fa'); router.refresh() }
     else { setSuccess(true); setLoading(false) }
   }
 
